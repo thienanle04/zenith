@@ -1,0 +1,11 @@
+{
+  "@@locale": "en",
+  "appTitle": "Zenith",
+  "@appTitle": {
+    "description": "Application title"
+  },
+  "portfolio": "Portfolio",
+  "@portfolio": {
+    "description": "Title of the portfolio screen"
+  }
+}
