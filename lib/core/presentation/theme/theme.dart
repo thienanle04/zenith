@@ -21,11 +21,13 @@ part 'icons.dart';
 /// See:
 /// * https://forui.dev/docs/guides/customizing-themes for customizing themes.
 /// * https://forui.dev/docs/guides/customizing-widget-styles for customizing individual widget styles.
-FThemeData get lightTheme {
+FThemeData get lightTheme => _theme(lightColors);
+
+FThemeData get darkTheme => _theme(darkColors);
+
+FThemeData _theme(FColors colors) {
   // Change this to false to use the desktop variant of this theme.
   const touch = true;
-
-  final colors = lightColors;
 
   final typography = _typography(colors: colors, touch: touch);
 
@@ -33,32 +35,13 @@ FThemeData get lightTheme {
 
   final style = _style(colors: colors, typography: typography, touch: touch);
 
-  return FThemeData(
+  final theme = FThemeData(
     colors: colors,
     typography: typography,
     icons: icons,
     style: style,
     touch: touch,
   );
-}
 
-FThemeData get darkTheme {
-  // Change this to false to use the desktop variant of this theme.
-  const touch = true;
-
-  final colors = darkColors;
-
-  final typography = _typography(colors: colors, touch: touch);
-
-  final icons = _icons();
-
-  final style = _style(colors: colors, typography: typography, touch: touch);
-
-  return FThemeData(
-    colors: colors,
-    typography: typography,
-    icons: icons,
-    style: style,
-    touch: touch,
-  );
+  return _underlineFields(theme);
 }

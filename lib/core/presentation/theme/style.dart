@@ -37,6 +37,69 @@ FStyle _style({
   );
 }
 
+/// Bottom-only field chrome for text fields and selects.
+FThemeData _underlineFields(FThemeData theme) {
+  final fields = _underline(theme.textFieldStyles, theme.colors, theme.style);
+  final selectFields = _underline(
+    theme.selectStyle.fieldStyles,
+    theme.colors,
+    theme.style,
+  );
+  return theme.copyWith(
+    textFieldStyles: fields,
+    selectStyle: .delta(fieldStyles: selectFields),
+  );
+}
+
+FTextFieldSizeStyles _underline(
+  FTextFieldSizeStyles styles,
+  FColors colors,
+  FStyle style,
+) {
+  InputBorder line(Color color) => UnderlineInputBorder(
+    borderSide: BorderSide(color: color, width: style.borderWidth),
+    borderRadius: BorderRadius.zero,
+  );
+  final disabled = colors.disable(colors.border);
+  final border =
+      FVariants<
+        FTextFieldVariantConstraint,
+        FTextFieldVariant,
+        InputBorder,
+        Delta
+      >(
+        line(colors.border),
+        variants: {
+          [.focused]: line(colors.primary),
+          [.error]: line(colors.error),
+          [.disabled]: line(disabled),
+          [.error.and(.disabled)]: line(disabled),
+        },
+      );
+  const fill =
+      FVariants<
+        FTextFieldVariantConstraint,
+        FTextFieldVariant,
+        Color?,
+        Delta
+      >.all(Color(0x00000000));
+
+  FTextFieldStyle paint(FTextFieldStyle field) =>
+      field.copyWith(color: fill, border: border);
+
+  return FTextFieldSizeStyles(
+    FVariants<
+      FTextFieldSizeVariantConstraint,
+      FTextFieldSizeVariant,
+      FTextFieldStyle,
+      FTextFieldStyleDelta
+    >.raw(paint(styles.base), {
+      for (final entry in styles.variants.entries)
+        entry.key: paint(entry.value),
+    }),
+  );
+}
+
 /// Provides convenient access to theme extensions on [FStyle].
 ///
 /// ```dart

@@ -9,7 +9,19 @@ The single book belonging to the one owner.
 _Avoid_: Household, book, wallet
 
 **Net worth**:
-The sum of the portfolio's account balances and the value of its holdings, as of now. A liability balance is negative, so it reduces that sum. Prices and the rate list keep no history.
+Assets plus liabilities, as of now. Prices and the rate list keep no history.
+
+**Assets**:
+The positive balances of accounts in the book, and the positive values of holdings. A positive balance on a credit card or a loan is an asset. A deleted account's balance is outside this sum.
+_Avoid_: asset account
+
+**Liabilities**:
+The negative balances of accounts in the book, and the negative values of holdings. A negative balance on a bank or on cash is a liability. A deleted account's balance is outside this sum.
+_Avoid_: liability account, the amount owed written as a positive number
+
+**Deleted account**:
+An account the owner has set aside. Its transactions stay, its balance is outside assets, liabilities, and net worth, and a deleted stock account's share holdings stay in the book. Deleting it completely removes the account and those transactions, a transfer or a trade as one whole record.
+_Avoid_: hidden account
 
 **Reporting currency**:
 The currency net worth is expressed in. It is VND.
@@ -90,14 +102,14 @@ A movement that changes a holding's quantity and does not move cash. It has no c
 ## Holdings
 
 **Instrument**:
-A thing the owner creates, with a name, a unit such as a share or a lượng, and a price in one currency. The unit and the price currency do not change after creation. A stock and physical gold are instruments.
+A thing the owner creates, with a name, a unit such as a share or a lượng, and a price in one currency. The unit and the price currency do not change after creation. A stock and physical gold are instruments. Removing an instrument removes every holding of it.
 
 **Stock account**:
 An asset account whose cash is used to buy and sell shares. The portfolio can contain more than one. Its kind does not change. Cash is moved in by a transfer before a purchase. A purchase that would make this cash negative is refused. Sale proceeds, and income such as a dividend, land in this same account.
 _Avoid_: brokerage
 
 **Holding**:
-A quantity of one instrument, equal to the sum of its trades and holding adjustments. A share holding belongs to one stock account, so the same shares in two stock accounts are two holdings. A physical holding, such as gold in hand, belongs to the portfolio and not to a stock account.
+A quantity of one instrument, equal to the sum of its trades and holding adjustments. A share holding belongs to one stock account, so the same shares in two stock accounts are two holdings. A physical holding, such as gold in hand, belongs to the portfolio and not to a stock account. Removing a holding removes its trades and holding adjustments.
 _Avoid_: Position, account
 
 **Price**:
