@@ -1,0 +1,10 @@
+CREATE TABLE portfolio (
+  id INTEGER NOT NULL PRIMARY KEY,
+  json TEXT NOT NULL
+);
+
+selectJson:
+SELECT json FROM portfolio WHERE id = 1;
+
+upsert:
+INSERT OR REPLACE INTO portfolio(id, json) VALUES (1, :json);

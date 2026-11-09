@@ -5,6 +5,8 @@ graphify-out/
 .idea/
 *.iml
 .cursor/settings.json
+.kotlin/
+.vscode/
 
 # Flutter
 .dart_tool/
@@ -14,6 +16,11 @@ graphify-out/
 .pub/
 build/
 coverage/
+
+# Gradle
+.gradle/
+local.properties
+key.properties
 
 # Android / iOS
 **/android/**/gradle-wrapper.jar

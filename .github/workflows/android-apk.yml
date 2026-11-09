@@ -7,6 +7,7 @@ on:
 jobs:
   build:
     runs-on: ubuntu-latest
+    environment: dev
     steps:
       - uses: actions/checkout@v4
 
@@ -16,12 +17,6 @@ jobs:
           java-version: "17"
           cache: gradle
 
-      - uses: subosito/flutter-action@v2
-        with:
-          flutter-version: "3.44.8"
-          channel: stable
-          cache: true
-
       - name: Write signing files
         env:
           ANDROID_KEYSTORE_BASE64: ${{ secrets.ANDROID_KEYSTORE_BASE64 }}
@@ -29,20 +24,46 @@ jobs:
           ANDROID_KEY_PASSWORD: ${{ secrets.ANDROID_KEY_PASSWORD }}
           ANDROID_KEY_ALIAS: ${{ secrets.ANDROID_KEY_ALIAS }}
         run: |
-          echo "$ANDROID_KEYSTORE_BASE64" | base64 -d > android/app/upload-keystore.jks
+          set -euo pipefail
+          missing=0
+          for name in ANDROID_KEYSTORE_BASE64 ANDROID_KEYSTORE_PASSWORD ANDROID_KEY_PASSWORD ANDROID_KEY_ALIAS; do
+            eval "val=\${$name-}"
+            if [ -z "$val" ]; then
+              echo "$name is empty — set the GitHub Actions secret"
+              missing=1
+            fi
+          done
+          [ "$missing" -eq 0 ]
+
+          printf '%s' "$ANDROID_KEYSTORE_BASE64" | tr -d '\r\n \t' | base64 -d > androidApp/upload-keystore.jks
+          if [ ! -s androidApp/upload-keystore.jks ]; then
+            echo "Decoded keystore is empty — ANDROID_KEYSTORE_BASE64 is not valid base64"
+            exit 1
+          fi
+
+          alias=$(printf '%s' "$ANDROID_KEY_ALIAS" | tr -d '\r\n')
+          store_type=""
+          if keytool -list -keystore androidApp/upload-keystore.jks -storepass "$ANDROID_KEYSTORE_PASSWORD" -storetype PKCS12 -alias "$alias" >/dev/null 2>&1; then
+            store_type=PKCS12
+          elif keytool -list -keystore androidApp/upload-keystore.jks -storepass "$ANDROID_KEYSTORE_PASSWORD" -storetype JKS -alias "$alias" >/dev/null 2>&1; then
+            store_type=JKS
+          else
+            echo "Keystore is not a readable JKS or PKCS12 (corrupt base64 decode, wrong password, or wrong alias)"
+            exit 1
+          fi
+
           {
-            echo "storePassword=$ANDROID_KEYSTORE_PASSWORD"
-            echo "keyPassword=$ANDROID_KEY_PASSWORD"
-            echo "keyAlias=$ANDROID_KEY_ALIAS"
-            echo "storeFile=upload-keystore.jks"
-          } > android/key.properties
+            printf 'storePassword=%s\n' "$ANDROID_KEYSTORE_PASSWORD"
+            printf 'keyPassword=%s\n' "$ANDROID_KEY_PASSWORD"
+            printf 'keyAlias=%s\n' "$alias"
+            printf 'storeFile=upload-keystore.jks\n'
+            printf 'storeType=%s\n' "$store_type"
+          } > androidApp/key.properties
 
-      - run: flutter pub get
-
-      - run: flutter build apk --release --build-number ${{ github.run_number }}
+      - run: chmod +x ./gradlew && ./gradlew :domain:jvmTest :data:jvmTest :androidApp:assembleRelease -PversionCode=${{ github.run_number }}
 
       - uses: actions/upload-artifact@v4
         with:
           name: zenith-apk
-          path: build/app/outputs/flutter-apk/app-release.apk
-          retention-days: 14
+          path: androidApp/build/outputs/apk/release/app-release.apk
+          retention-days: 7

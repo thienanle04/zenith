@@ -2,25 +2,37 @@
 
 One owner's portfolio: where money moved, and what that portfolio is worth.
 
-## Book
+## Portfolio
 
 **Portfolio**:
-The single book belonging to the one owner.
+The one owner's accounts, holdings, and movements.
 _Avoid_: Household, book, wallet
+
+**Order**:
+The sequence of groups, share sections, and physical holdings, and the rows inside each. Unrearranged, it runs cash, bank, e-wallet, credit card, loan, receivable, stock, then share sections in the order the instruments were created, then physical holdings, leaving an empty one out, and once a section has been moved a later section joins the end.
+_Avoid_: Sort, rank
+
+**Group**:
+The accounts of one kind: cash, bank, e-wallet, credit card, loan, receivable, or stock. The sign of a balance does not move an account, and a new account or one whose kind changed joins at the end.
+_Avoid_: Assets, liabilities, a name the owner invents
+
+**Group subtotal**:
+The signed sum of that group's account balances, in the reporting currency. The Stock subtotal is cash only.
+_Avoid_: net worth, a quantity, share values
 
 **Net worth**:
 Assets plus liabilities, as of now. Prices and the rate list keep no history.
 
 **Assets**:
-The positive balances of accounts in the book, and the positive values of holdings. A positive balance on a credit card or a loan is an asset. A deleted account's balance is outside this sum.
-_Avoid_: asset account
+The positive balances of accounts in the portfolio, and the positive values of holdings. A positive balance on a credit card or a loan is an asset. A deleted account's balance is outside this sum.
+_Avoid_: asset account, a group
 
 **Liabilities**:
-The negative balances of accounts in the book, and the negative values of holdings. A negative balance on a bank or on cash is a liability. A deleted account's balance is outside this sum.
-_Avoid_: liability account, the amount owed written as a positive number
+The negative balances of accounts in the portfolio, and the negative values of holdings. A negative balance on a bank or on cash is a liability. A deleted account's balance is outside this sum.
+_Avoid_: liability account, a group, the amount owed written as a positive number
 
 **Deleted account**:
-An account the owner has set aside. Its transactions stay, its balance is outside assets, liabilities, and net worth, and a deleted stock account's share holdings stay in the book. Deleting it completely removes the account and those transactions, a transfer or a trade as one whole record.
+An account the owner has set aside. Its transactions stay, its balance is outside assets, liabilities, and net worth, and a deleted stock account loses its share holdings, their trades, and the cash those trades moved. Deleting it completely removes the account and those transactions, a transfer or a trade as one whole record.
 _Avoid_: hidden account
 
 **Reporting currency**:
@@ -45,6 +57,10 @@ A way to spend from an asset account, such as a debit card. It has no balance of
 _Avoid_: Debit card
 
 ## Movements
+
+**Transaction**:
+The owner's name for one movement: an income, an expense, a transfer, a trade, a balance adjustment, or a holding adjustment.
+_Avoid_: movement
 
 **Balance adjustment**:
 An income or an expense created when the owner types an account's balance other than the one it already shows. The amount stored is the signed difference. Positive uses the modify-balance income category. Negative uses the modify-balance expense category. It can change type the same way as any other income or expense, and that change clears the system category. Typing zero on a new account creates no transaction.
@@ -102,7 +118,7 @@ A movement that changes a holding's quantity and does not move cash. It has no c
 ## Holdings
 
 **Instrument**:
-A thing the owner creates, with a name, a unit such as a share or a lượng, and a price in one currency. The unit and the price currency do not change after creation. A stock and physical gold are instruments. Removing an instrument removes every holding of it.
+A thing the owner creates, with a name, a unit such as a share or a lượng, and a price in one currency. The unit and the price currency do not change after creation. A stock and physical gold are instruments. Removing an instrument removes every holding of it. An instrument with nothing left held is removed.
 
 **Stock account**:
 An asset account whose cash is used to buy and sell shares. The portfolio can contain more than one. Its kind does not change. Cash is moved in by a transfer before a purchase. A purchase that would make this cash negative is refused. Sale proceeds, and income such as a dividend, land in this same account.
@@ -111,6 +127,14 @@ _Avoid_: brokerage
 **Holding**:
 A quantity of one instrument, equal to the sum of its trades and holding adjustments. A share holding belongs to one stock account, so the same shares in two stock accounts are two holdings. A physical holding, such as gold in hand, belongs to the portfolio and not to a stock account. Removing a holding removes its trades and holding adjustments.
 _Avoid_: Position, account
+
+**Share section**:
+The holdings of one instrument, one row per stock account. Its total is the sum of their quantities, in that instrument's unit, and unrearranged the rows follow the order the stock accounts were created.
+_Avoid_: a group, a money total, one section per stock account
+
+**Physical holdings**:
+The physical holdings, in one section. Their subtotal is the signed sum of their values in the reporting currency.
+_Avoid_: a group, a quantity total
 
 **Price**:
 The current value of one unit of an instrument, in one currency, as typed by the owner. Every holding of that instrument uses the same price.

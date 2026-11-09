@@ -1,0 +1,5 @@
+# Data encodes the portfolio
+
+`data` encodes and decodes the one portfolio with kotlinx.serialization. `domain` keeps plain portfolio types and `PortfolioBook`, and it does not depend on the serialization library or the store. The rules for a trade, a rate, and an exact amount stay in `PortfolioBook`. A blank string is an empty portfolio. Any other decode failure throws, including an unknown key. The encoder writes every field, including defaults and nulls. `Exact` is stored as its decimal string.
+
+Annotations on the domain types would put the serialization plugin in `domain`. A second document type in `data` would copy the same fields. The hand-written codec was that copy already. Generated serializers that enforced portfolio rules would move those rules out of `PortfolioBook`, which is the refusal recorded in ADR-0020. ADR-0026 supersedes that refusal and the sentence in ADR-0019 that places the codec in `domain`. The portfolio remains one SQLDelight row, in table `portfolio`, column `json`.

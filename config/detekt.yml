@@ -1,0 +1,36 @@
+# Detekt 2.0.0-alpha.6 has no ignoreAnnotated setting on FunctionNaming, LongMethod,
+# LongParameterList, or MagicNumber. The Android app is excluded from those rules so
+# @Composable functions can keep PascalCase names, long parameter lists, and dp literals.
+# domain and data stay on the defaults. Ktlint owns line length. Enum entry names are the
+# spellings stored in the portfolio JSON.
+
+naming:
+  EnumNaming:
+    enumEntryPattern: '[a-z][A-Za-z0-9]*'
+  FunctionNaming:
+    excludes:
+      - '**/androidApp/**'
+
+complexity:
+  LongMethod:
+    excludes:
+      - '**/androidApp/**'
+  LongParameterList:
+    excludes:
+      - '**/androidApp/**'
+
+style:
+  MaxLineLength:
+    active: false
+  MagicNumber:
+    excludes:
+      - '**/test/**'
+      - '**/androidTest/**'
+      - '**/commonTest/**'
+      - '**/jvmTest/**'
+      - '**/androidUnitTest/**'
+      - '**/androidInstrumentedTest/**'
+      - '**/jsTest/**'
+      - '**/iosTest/**'
+      - '**/*.kts'
+      - '**/androidApp/**'
