@@ -42,11 +42,10 @@ fun canonicalAmount(
 ): String {
     val digits = amountDigits(input, separators)
     if (digits.isEmpty()) return ""
-    val decimal = decimalChar(separators)
+    val decimal = separatorChars(separators).first
     val parts = digits.split(decimal, limit = 2)
     val whole = parts[0].trimStart('0').ifEmpty { "0" }
-    if (parts.size == 1) return whole
-    return whole + decimal + parts[1]
+    return if (parts.size == 1) whole else whole + decimal + parts[1]
 }
 
 /** Grouped amount for display. An empty input stays empty so no suffix is shown alone. */
@@ -56,18 +55,17 @@ fun groupedAmount(
 ): String {
     val digits = amountDigits(input, separators)
     if (digits.isEmpty()) return ""
-    val decimal = decimalChar(separators)
+    val (decimal, grouping) = separatorChars(separators)
     val parts = digits.split(decimal, limit = 2)
-    val grouped = group(parts[0], groupingChar(separators).toString())
-    if (parts.size == 1) return grouped
-    return grouped + decimal + parts[1]
+    val grouped = group(parts[0], grouping.toString())
+    return if (parts.size == 1) grouped else grouped + decimal + parts[1]
 }
 
 private fun amountDigits(
     input: String,
     separators: SeparatorPair,
 ): String {
-    val decimal = decimalChar(separators)
+    val decimal = separatorChars(separators).first
     val kept = StringBuilder()
     var seenDecimal = false
     for (char in input) {
@@ -82,9 +80,7 @@ private fun amountDigits(
     return kept.toString()
 }
 
-private fun decimalChar(separators: SeparatorPair): Char = if (separators == SeparatorPair.commaPoint) '.' else ','
-
-private fun groupingChar(separators: SeparatorPair): Char = if (separators == SeparatorPair.commaPoint) ',' else '.'
+private fun separatorChars(separators: SeparatorPair): Pair<Char, Char> = if (separators == SeparatorPair.commaPoint) '.' to ',' else ',' to '.'
 
 fun formatMinor(
     minor: Long,

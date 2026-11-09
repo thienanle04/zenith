@@ -1,8 +1,6 @@
 package com.zenith.app.features.portfolio
 
-import androidx.compose.foundation.BorderStroke
 import androidx.compose.foundation.background
-import androidx.compose.foundation.border
 import androidx.compose.foundation.clickable
 import androidx.compose.foundation.layout.Arrangement
 import androidx.compose.foundation.layout.Column
@@ -37,7 +35,6 @@ import com.zenith.domain.portfolio.PortfolioView
 import com.zenith.domain.portfolio.RowKind
 import com.zenith.domain.portfolio.SectionKind
 import kotlinx.coroutines.launch
-import java.time.Month
 
 @Composable
 fun PortfolioGroups(

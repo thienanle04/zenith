@@ -55,14 +55,14 @@ fun PortfolioScreen(
                 onModifyOrders = onModifyOrders,
             )
         },
-        bottomBar = { ZenithBottomBar(PortfolioDestination, onSelectTab) }
+        bottomBar = { ZenithBottomBar(PortfolioDestination, onSelectTab) },
     ) { padding ->
         if (view == null) {
             CircularProgressIndicator(Modifier.padding(padding).padding(24.dp))
             return@Scaffold
         }
         Column(Modifier.fillMaxSize().padding(padding), verticalArrangement = Arrangement.Top) {
-            Row(Modifier.fillMaxWidth().background(MaterialTheme.colorScheme.surfaceContainer).padding(8.dp), horizontalArrangement = Arrangement.SpaceAround,) {
+            Row(Modifier.fillMaxWidth().background(MaterialTheme.colorScheme.surfaceContainer).padding(8.dp), horizontalArrangement = Arrangement.SpaceAround) {
                 Figure(stringResource(R.string.assets), view.assets, view, PositiveAmount, Modifier.weight(1f))
                 Figure(stringResource(R.string.liabilities), view.liabilities, view, NegativeAmount, Modifier.weight(1f))
                 Figure(stringResource(R.string.net_worth), view.netWorth, view, MaterialTheme.colorScheme.onSurface, Modifier.weight(1f), signed = true)

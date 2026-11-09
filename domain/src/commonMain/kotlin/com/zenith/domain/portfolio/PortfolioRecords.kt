@@ -3,7 +3,7 @@ package com.zenith.domain.portfolio
 import com.zenith.domain.money.Exact
 
 internal fun account(
-    book: Portfolio, 
+    book: Portfolio,
     id: String,
 ): AccountRecord = book.accounts.firstOrNull { it.id == id } ?: refuse(PortfolioFailure.NotFound)
 

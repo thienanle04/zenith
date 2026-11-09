@@ -60,9 +60,13 @@ private class AmountOffsetMapping(
         if (originalMarks.isEmpty()) return 0
         val numberOffset = (offset - prefixLength).coerceIn(0, groupedLength)
         val marksBefore = groupedMarks.count { it < numberOffset }
-        if (marksBefore == 0) return 0
-        val mark = originalMarks[(marksBefore - 1).coerceAtMost(originalMarks.lastIndex)]
-        return mark + 1
+        val mark =
+            if (marksBefore == 0) {
+                null
+            } else {
+                originalMarks[(marksBefore - 1).coerceAtMost(originalMarks.lastIndex)]
+            }
+        return if (mark == null) 0 else mark + 1
     }
 }
 

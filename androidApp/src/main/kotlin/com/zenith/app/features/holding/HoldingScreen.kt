@@ -30,12 +30,12 @@ import com.zenith.app.core.l10n.portfolioFailureMessage
 import com.zenith.app.core.utils.formatMajor
 import com.zenith.app.core.utils.moneyPrefix
 import com.zenith.app.core.utils.moneySuffix
-import com.zenith.domain.portfolio.SeparatorPair
 import com.zenith.app.core.writer.PortfolioViewModel
 import com.zenith.domain.portfolio.HoldingEditor
 import com.zenith.domain.portfolio.PortfolioCommand
 import com.zenith.domain.portfolio.PortfolioFailure
 import com.zenith.domain.portfolio.PortfolioOutcome
+import com.zenith.domain.portfolio.SeparatorPair
 import com.zenith.domain.portfolio.StockAccountChoice
 import kotlinx.coroutines.launch
 
