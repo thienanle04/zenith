@@ -1,0 +1,158 @@
+# Zenith
+
+One owner's portfolio: where money moved, and what that portfolio is worth.
+
+## Portfolio
+
+**Portfolio**:
+The one owner's accounts, holdings, and movements.
+_Avoid_: Household, book, wallet
+
+**Order**:
+The sequence of groups, share sections, and physical holdings, and the rows inside each. Unrearranged, it runs cash, bank, e-wallet, credit card, loan, receivable, stock, then share sections in the order the instruments were created, then physical holdings, leaving an empty one out, and once a section has been moved a later section joins the end.
+_Avoid_: Sort, rank
+
+**Group**:
+The accounts of one kind: cash, bank, e-wallet, credit card, loan, receivable, or stock. The sign of a balance does not move an account, and a new account or one whose kind changed joins at the end.
+_Avoid_: Assets, liabilities, a name the owner invents
+
+**Group subtotal**:
+The signed sum of that group's account balances, in the primary currency. The Stock subtotal is cash only.
+_Avoid_: net worth, a quantity, share values
+
+**Net worth**:
+Assets plus liabilities, as of now, in the primary currency. Prices and the rate list keep no history.
+
+**Assets**:
+The positive balances of accounts in the portfolio, and the positive values of holdings. A positive balance on a credit card or a loan is an asset. A deleted account's balance is outside this sum.
+_Avoid_: asset account, a group
+
+**Liabilities**:
+The negative balances of accounts in the portfolio, and the negative values of holdings. A negative balance on a bank or on cash is a liability. A deleted account's balance is outside this sum.
+_Avoid_: liability account, a group, the amount owed written as a positive number
+
+**Deleted account**:
+An account the owner has set aside. Its transactions stay, its balance is outside assets, liabilities, and net worth, and a deleted stock account loses its share holdings, their trades, and the cash those trades moved. Deleting it completely removes the account and those transactions, a transfer or a trade as one whole record.
+_Avoid_: hidden account
+
+**Primary currency**:
+The currency net worth is expressed in. The owner chooses it, starting from VND, and the choice is VND or a currency that already has a rate-list row; another choice leaves every stored amount and the rate list as they are, and net worth is the VND total converted into this currency.
+_Avoid_: reporting currency, account currency, the exchange rate on a transaction
+
+## Balances
+
+**Account**:
+A named balance in one currency. Cash, a bank deposit, and an e-wallet are asset accounts. A credit card is a liability account. A liability balance is negative while the owner owes money. Changing kind among cash, bank, e-wallet, credit card, loan, and receivable leaves every stored amount as it is. Changing its currency rescales every amount stored on it by one factor. That factor starts from the rate list, the suggested balance is rounded to the new currency's transaction amount decimal precision, and the owner may change the resulting balance or the rate before saving. The other account in a transfer is left as it is.
+_Avoid_: Wallet, card
+
+**Loan**:
+A liability account for money the owner owes a lender.
+_Avoid_: Debt
+
+**Receivable**:
+An asset account for money someone owes the owner.
+_Avoid_: Debt
+
+**Payment method**:
+A way to spend from an asset account, such as a debit card. It has no balance of its own. An expense may record which payment method was used. A credit-card swipe records no payment method, because the credit card is the account.
+_Avoid_: Debit card
+
+## Movements
+
+**Transaction**:
+The owner's name for one movement: an income, an expense, a transfer, a trade, a balance adjustment, or a holding adjustment.
+_Avoid_: movement
+
+**Transaction amount decimal precision**:
+How many digits after the decimal mark an amount in one currency is typed, shown, and saved with. It is a whole number from 0 through 4, one for VND and one for each rate-list currency, starting at none for VND, JPY, and KRW and at two for every other currency. Changing it leaves saved amounts stored. What is shown rounds to the precision of the currency it is shown in, and half rounds away from zero. A total sums stored amounts and only the finished total rounds. Net worth converts through the rate list first, and a period total converts through each transaction's stored exchange rate first. Opening a transaction shows that rounding, saving stores it, and leaving without saving keeps what was stored.
+_Avoid_: percentage precision
+
+**Balance adjustment**:
+An income or an expense created when the owner types an account's balance other than the one it already shows. Saving the rounded balance that matches the stored balance at the current precision creates none. The amount stored is the exact signed difference, including digits beyond the current precision. Positive uses the modify-balance income category. Negative uses the modify-balance expense category. It can change type the same way as any other income or expense, and that change clears the system category. Typing zero on a new account creates no transaction.
+_Avoid_: Opening balance
+
+**Exchange rate**:
+The VND value of one unit of a transaction's currency, stored on that transaction. The owner may change it while creating the transaction and by editing it later. Spending totals use this stored rate.
+_Avoid_: Live rate, market rate
+
+**Rate list**:
+The owner's exchange rate into VND for each currency, one row each. A new transaction starts from this list, and net worth converts foreign account balances and foreign prices through it into VND before the primary currency is applied. A currency is added to the list before an account or a price in that currency can be saved.
+
+**Category**:
+A label the owner creates, either for incomes or for expenses. Only these are shown, and the owner chooses from them. The owner may rename one. Its side stays as created. Deleting one clears it on existing transactions, which become uncategorized. Changing an income, an expense, or a transfer into one of the other two clears the category.
+_Avoid_: a label used for both income and expense
+
+**System category**:
+The modify-balance income category, the modify-balance expense category, or the fee category. The owner never sees these and cannot rename, delete, or choose them.
+_Avoid_: uncategorized
+
+**Uncategorized**:
+An income or an expense with no category.
+_Avoid_: a built-in uncategorized category
+
+**Income**:
+A transaction that increases net worth on one account. Its amount is positive. It may carry an income category.
+
+**Expense**:
+A transaction that decreases net worth on one account. Its amount is negative. It may carry an expense category and a payment method. Changing it into an income keeps the magnitude and makes the amount positive. Changing an income into an expense keeps the magnitude and makes the amount negative.
+
+**Bank reference**:
+The identifier a bank assigns to one of its rows. A transaction created from that row stores the reference and the row's signed amount as-is, on a credit card as well as on a bank account. Importing the same reference again adds nothing.
+
+**Occurred at**:
+The local date and time of a transaction. Income and expense totals for a period include a transaction when this time falls in the period.
+
+**Date format**:
+Which of Full, Date only, Numeric, or Numeric only writes an occurred-at. It starts on Full. Full and Numeric begin with Today, Yesterday, or the weekday. A spelled month includes the year only outside the current year, and a numeric date always includes the year.
+
+**Date order**:
+The sequence of day, month, and year in a date format. It starts on Default. Default is day/month/year in Vietnamese and month/day/year in English, System follows the phone, and Month/Day/Year, Day/Month/Year, Year/Month/Day, and Year/Day/Month stay fixed.
+
+**Clock format**:
+How a time of day is written and picked: 24-hour, 12-hour, or System. It starts on System, which follows the phone, including the phone's marker. A 12-hour time uses AM/PM. It does not decide whether a date format includes the time.
+
+**First weekday**:
+The first column of the calendar grid. It is Monday, Sunday, or Saturday, and it starts on Monday.
+
+**Note**:
+The words shown for a transaction in the list. A bank row fills the note with the bank's text. A photo fills it with the merchant, and fills the time from the bill, or with the current time when the bill has none.
+_Avoid_: description
+
+**Description**:
+Optional extra words on a transaction. A bank row and a photo leave it empty.
+_Avoid_: note
+
+**Transfer**:
+A movement of money between two of the owner's accounts. It has no category, and net worth does not change.
+
+**Trade**:
+One record that changes a holding's quantity and the cash paid or received, fee included. The instrument's price currency is that cash account's currency. For shares, the cash account is the stock account the holding belongs to. For physical gold, it is the account that paid. Removing the trade removes the cash, the quantity, and the fee together. Changing a trade into an income, an expense, or a transfer drops the quantity and the separate fee, and the cash magnitude, fee included, follows that new type. That change is refused when the holding's quantity would fall below zero. An income, an expense, or a transfer cannot become a trade. The cash amount on the trade is history. Net worth uses the holding's quantity times its instrument's current price, and the sale's profit is not income.
+_Avoid_: paying for shares straight from a bank account
+
+**Holding adjustment**:
+A movement that changes a holding's quantity and does not move cash. It has no category. Typing the quantity the holding already shows records nothing.
+
+## Holdings
+
+**Instrument**:
+A thing the owner creates, with a name, a unit such as a share or a lượng, and a price in one currency. The unit and the price currency do not change after creation. A stock and physical gold are instruments. Removing an instrument removes every holding of it. An instrument with nothing left held is removed.
+
+**Stock account**:
+An asset account whose cash is used to buy and sell shares. The portfolio can contain more than one. Its kind does not change. Cash is moved in by a transfer before a purchase. A purchase that would make this cash negative is refused. Sale proceeds, and income such as a dividend, land in this same account.
+_Avoid_: brokerage
+
+**Holding**:
+A quantity of one instrument, equal to the sum of its trades and holding adjustments. A share holding belongs to one stock account, so the same shares in two stock accounts are two holdings. A physical holding, such as gold in hand, belongs to the portfolio and not to a stock account. Removing a holding removes its trades and holding adjustments.
+_Avoid_: Position, account
+
+**Share section**:
+The holdings of one instrument, one row per stock account. Its total is the sum of their quantities, in that instrument's unit, and unrearranged the rows follow the order the stock accounts were created.
+_Avoid_: a group, a money total, one section per stock account
+
+**Physical holdings**:
+The physical holdings, in one section. Their subtotal is the signed sum of their values in the primary currency.
+_Avoid_: a group, a quantity total
+
+**Price**:
+The current value of one unit of an instrument, in one currency, as typed by the owner. Every holding of that instrument uses the same price.
+_Avoid_: Quote, market price
