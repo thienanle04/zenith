@@ -72,4 +72,50 @@ sealed interface PortfolioCommand {
         val rowId: String,
         val delta: Int,
     ) : PortfolioCommand
+
+    data class SetLanguage(
+        val language: AppLanguage,
+    ) : PortfolioCommand
+
+    data class SetPrimaryCurrency(
+        val currency: String,
+    ) : PortfolioCommand
+
+    data class SetRate(
+        val currency: String,
+        val rateText: String,
+    ) : PortfolioCommand
+
+    data class SetDatePickerStyle(
+        val style: DatePickerStyle,
+    ) : PortfolioCommand
+
+    data class SetTimePickerStyle(
+        val style: TimePickerStyle,
+    ) : PortfolioCommand
+
+    data class SetClockFormat(
+        val format: ClockFormat,
+    ) : PortfolioCommand
+
+    data class SetDateFormat(
+        val format: DateFormat,
+    ) : PortfolioCommand
+
+    data class SetDateOrder(
+        val order: DateOrder,
+    ) : PortfolioCommand
+
+    data class SetFirstWeekday(
+        val weekday: FirstWeekday,
+    ) : PortfolioCommand
+
+    data class SetAmountPrecision(
+        val currency: String,
+        val digits: Int,
+    ) : PortfolioCommand
+
+    data class SetPercentagePrecision(
+        val digits: Int,
+    ) : PortfolioCommand
 }

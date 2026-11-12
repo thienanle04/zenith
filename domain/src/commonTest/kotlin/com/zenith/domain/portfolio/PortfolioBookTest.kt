@@ -330,7 +330,7 @@ class PortfolioBookTest {
                 .apply(PortfolioCommand.AddAccount("Dollar", AccountKind.bank, "USD"))
                 .apply(PortfolioCommand.SaveAccount("1", "Dollar", AccountKind.bank, "USD", "1.000,50", null))
 
-        assertEquals(100050L, book.movements.single().amountMinor)
+        assertEquals(10_005_000L, book.movements.single().amountMinor)
     }
 
     @Test
@@ -340,6 +340,85 @@ class PortfolioBookTest {
             PortfolioBook.accountEditor(Portfolio.empty, "1"),
         )
     }
+
+    @Test
+    fun precisionRoundsTheScreenAndKeepsTheSavedAmount() {
+        var book =
+            Portfolio(rates = mapOf("USD" to Exact.one))
+                .apply(PortfolioCommand.AddAccount("Dollar", AccountKind.bank, "USD"))
+                .apply(PortfolioCommand.SaveAccount("1", "Dollar", AccountKind.bank, "USD", "10.25", null))
+        val saved = book.movements.single().amountMinor
+        book = book.apply(PortfolioCommand.SetAmountPrecision("USD", 0))
+
+        assertEquals(saved, book.movements.single().amountMinor)
+        assertEquals(Exact.parse("10"), readyEditor(book).balance)
+        assertEquals(Exact.zero, shownAmount(book, Exact.parse("0.40"), "USD"))
+        assertEquals(Exact.parse("1"), shownTotal(book, listOf(Exact.parse("0.40"), Exact.parse("0.40")), "USD"))
+
+        val shown = book.apply(PortfolioCommand.SaveAccount("1", "Dollar", AccountKind.bank, "USD", "10", null))
+        assertEquals(saved, shown.movements.single().amountMinor)
+
+        val replaced = book.apply(PortfolioCommand.SaveAccount("1", "Dollar", AccountKind.bank, "USD", "11", null))
+        assertEquals(Exact.parse("0.75"), com.zenith.domain.money.fromQuanta(replaced.movements.last().amountMinor))
+        assertEquals(Exact.parse("11"), readyEditor(replaced).balance)
+    }
+
+    @Test
+    fun netWorthUsesTheStoredAmountThenRoundsInThePrimaryCurrency() {
+        val book =
+            Portfolio(rates = mapOf("USD" to Exact.parse("25000")), primaryCurrency = "USD")
+                .apply(PortfolioCommand.AddAccount("Dollar", AccountKind.bank, "USD"))
+                .apply(PortfolioCommand.SaveAccount("1", "Dollar", AccountKind.bank, "USD", "3.25", null))
+                .apply(PortfolioCommand.SetAmountPrecision("USD", 0))
+
+        val view = PortfolioBook.present(book)
+        assertEquals(81250L, view.assets)
+        assertEquals(Exact.parse("3"), view.netWorthExact)
+    }
+
+    @Test
+    fun aFullDateNamesTodayAndAPastWeekday() {
+        val today = CalendarDay(2026, 11, 10)
+        assertEquals(
+            "Today, 10 November",
+            formatCalendarDay(today, today, DateFormat.full, DateOrder.dayMonthYear, AppLanguage.english),
+        )
+        assertEquals(
+            "10 November",
+            formatCalendarDay(today, today, DateFormat.dateOnly, DateOrder.dayMonthYear, AppLanguage.english),
+        )
+        assertEquals(
+            "Today, 10/11/2026",
+            formatCalendarDay(today, today, DateFormat.numeric, DateOrder.dayMonthYear, AppLanguage.english),
+        )
+        assertEquals(
+            "10/11/2026",
+            formatCalendarDay(today, today, DateFormat.numericOnly, DateOrder.dayMonthYear, AppLanguage.english),
+        )
+        val past = CalendarDay(2025, 11, 10)
+        assertEquals(
+            "Monday, 10 November 2025",
+            formatCalendarDay(past, today, DateFormat.full, DateOrder.dayMonthYear, AppLanguage.english),
+        )
+        assertEquals(
+            "2026/10/11",
+            formatCalendarDay(today, today, DateFormat.numericOnly, DateOrder.yearDayMonth, AppLanguage.english),
+        )
+        assertEquals(
+            DateOrder.dayMonthYear,
+            resolveDateOrder(DateOrder.defaultOrder, AppLanguage.vietnamese, DateOrder.monthDayYear),
+        )
+        assertEquals(
+            DateOrder.monthDayYear,
+            resolveDateOrder(DateOrder.system, AppLanguage.vietnamese, DateOrder.monthDayYear),
+        )
+    }
+
+    private fun readyEditor(book: Portfolio): AccountEditor =
+        when (val outcome = PortfolioBook.accountEditor(book, "1")) {
+            is PortfolioOutcome.Ready -> outcome.value
+            is PortfolioOutcome.Refused -> fail("refused: ${outcome.failure}")
+        }
 
     private fun Portfolio.apply(command: PortfolioCommand): Portfolio =
         when (val outcome = PortfolioBook.apply(this, command)) {

@@ -1,6 +1,8 @@
 package com.zenith.domain.portfolio
 
 import com.zenith.domain.money.Exact
+import com.zenith.domain.money.fromQuanta
+import com.zenith.domain.money.minorAmount
 
 private val kindOrder =
     listOf(
@@ -56,29 +58,34 @@ internal fun section(
     return if (kind != null) {
         val accounts = book.accounts.filter { !it.setAside && it.kind == kind }
         val ordered = orderedAccounts(book, kind, accounts)
+        val vnd = vndTotal(ordered.map { accountVnd(book, it) })
         PortfolioSection(
             key = key,
             kind = kind.toSectionKind(),
             rows =
                 ordered.map { account ->
+                    val major = fromQuanta(balance(book, account.id))
                     PortfolioRow.account(
                         account.id,
                         account.name,
-                        balance(book, account.id),
+                        minorAmount(major, account.currency),
                         account.currency,
                         stock = account.kind == AccountKind.stock,
-                    )
+                    ).copy(stored = major)
                 },
-            subtotalMinor = vndSum(ordered.map { accountVnd(book, it) }),
+            subtotalMinor = vnd.roundToIntChecked(),
+            subtotalExact = primaryAmount(book, vnd),
         )
     } else if (key == "physical") {
         val holdings = book.holdings.filter { it.stockAccountId == null }
         val rows = holdingRows(book, key, holdings) { instrument, _, _ -> instrument.name }
+        val vnd = vndTotal(holdings.map { holdingVnd(book, it) })
         PortfolioSection(
             key = key,
             kind = SectionKind.physical,
             rows = rows,
-            subtotalMinor = vndSum(holdings.map { holdingVnd(book, it) }),
+            subtotalMinor = vnd.roundToIntChecked(),
+            subtotalExact = primaryAmount(book, vnd),
         )
     } else {
         val instrumentId = key.removePrefix("share:")

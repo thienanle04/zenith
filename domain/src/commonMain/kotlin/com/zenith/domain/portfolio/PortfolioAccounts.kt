@@ -1,8 +1,7 @@
 package com.zenith.domain.portfolio
 
 import com.zenith.domain.money.Exact
-import com.zenith.domain.money.majorAmount
-import com.zenith.domain.money.minorAmount
+import com.zenith.domain.money.fromQuanta
 
 /** The balance a currency change would produce, in the new currency's major units. */
 internal fun proposedBalance(
@@ -14,11 +13,11 @@ internal fun proposedBalance(
     if (newRate.isZero || newRate.isNegative) {
         refuse(PortfolioFailure.RatePositive)
     }
-    val minor = balance(book, id)
-    if (minor == 0L) {
+    val quanta = balance(book, id)
+    if (quanta == 0L) {
         return Exact.zero
     }
-    val vnd = majorAmount(minor, account.currency) * rate(book, account.currency)
+    val vnd = fromQuanta(quanta) * rate(book, account.currency)
     return vnd / newRate
 }
 
@@ -73,7 +72,7 @@ internal fun saveAccount(
             }
             rescale(next, account, currency, balance)
         } else {
-            setBalance(next, id, minorAmount(balance, currency))
+            setBalance(next, id, quantaFor(next, balance, currency))
         }
     val updated =
         next.copy(
@@ -106,20 +105,21 @@ internal fun setAside(
 private fun setBalance(
     book: Portfolio,
     id: String,
-    targetMinor: Long,
+    targetQuanta: Long,
 ): Portfolio {
     val current = balance(book, id)
-    if (current == targetMinor) {
+    val account = account(book, id)
+    val shown = quantaFor(book, fromQuanta(current), account.currency)
+    if (shown == targetQuanta) {
         return book
     }
-    val account = account(book, id)
     return book.copy(
         movements =
             book.movements +
                 MovementRecord(
                     id = id(book),
                     accountId = id,
-                    amountMinor = targetMinor - current,
+                    amountMinor = targetQuanta - current,
                     vndPerUnit = rate(book, account.currency),
                 ),
         nextId = book.nextId + 1,
@@ -143,7 +143,7 @@ private fun rescale(
     balance: Exact,
 ): Portfolio {
     val current = balance(book, account.id)
-    val target = minorAmount(balance, currency)
+    val target = quantaFor(book, balance, currency)
     if (current == 0L) {
         return book
     }

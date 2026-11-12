@@ -3,6 +3,7 @@ package com.zenith.app.core.utils
 import com.zenith.domain.money.Exact
 import com.zenith.domain.money.abs
 import com.zenith.domain.money.majorAmount
+import com.zenith.domain.money.roundDigits
 import com.zenith.domain.portfolio.SeparatorPair
 
 fun formatMajor(
@@ -81,6 +82,17 @@ private fun amountDigits(
 }
 
 private fun separatorChars(separators: SeparatorPair): Pair<Char, Char> = if (separators == SeparatorPair.commaPoint) '.' to ',' else ',' to '.'
+
+fun formatShown(
+    amount: Exact,
+    currency: String,
+    separators: SeparatorPair,
+    precision: Int,
+): String {
+    val rounded = roundDigits(amount, precision)
+    val text = formatMoney(rounded.abs(), currency, separators)
+    return if (rounded.isNegative) "-$text" else text
+}
 
 fun formatMinor(
     minor: Long,

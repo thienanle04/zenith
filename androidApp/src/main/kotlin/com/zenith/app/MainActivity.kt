@@ -1,5 +1,6 @@
 package com.zenith.app
 
+import android.content.Context
 import android.os.Bundle
 import androidx.activity.ComponentActivity
 import androidx.activity.compose.setContent
@@ -9,9 +10,15 @@ import androidx.core.view.WindowInsetsCompat
 import androidx.core.view.WindowInsetsControllerCompat
 import com.zenith.app.ZenithApp
 import com.zenith.app.ZenithApplication
+import com.zenith.app.core.l10n.storedLanguage
+import com.zenith.app.core.l10n.withAppLanguage
 import com.zenith.app.core.theme.ZenithTheme
 
 class MainActivity : ComponentActivity() {
+    override fun attachBaseContext(newBase: Context) {
+        super.attachBaseContext(newBase.withAppLanguage(newBase.storedLanguage()))
+    }
+
     override fun onCreate(savedInstanceState: Bundle?) {
         super.onCreate(savedInstanceState)
         enableEdgeToEdge()

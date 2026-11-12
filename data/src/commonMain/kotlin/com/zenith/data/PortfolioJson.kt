@@ -7,11 +7,19 @@ import com.zenith.domain.money.toJson
 import com.zenith.domain.portfolio.AccountKind
 import com.zenith.domain.portfolio.AccountRecord
 import com.zenith.domain.portfolio.AdjustmentRecord
+import com.zenith.domain.portfolio.AppLanguage
+import com.zenith.domain.portfolio.ClockFormat
+import com.zenith.domain.portfolio.DateFormat
+import com.zenith.domain.portfolio.DateOrder
+import com.zenith.domain.portfolio.DatePickerStyle
+import com.zenith.domain.portfolio.FirstWeekday
 import com.zenith.domain.portfolio.HoldingRecord
 import com.zenith.domain.portfolio.InstrumentRecord
 import com.zenith.domain.portfolio.MovementRecord
 import com.zenith.domain.portfolio.Portfolio
 import com.zenith.domain.portfolio.SeparatorPair
+import com.zenith.domain.portfolio.TimePickerStyle
+import com.zenith.domain.portfolio.withCurrentAmountScale
 import kotlinx.serialization.DeserializationStrategy
 import kotlinx.serialization.ExperimentalSerializationApi
 import kotlinx.serialization.KSerializer
@@ -36,6 +44,21 @@ private const val FIELD_6 = 6
 private const val FIELD_7 = 7
 private const val FIELD_8 = 8
 private const val FIELD_9 = 9
+private const val FIELD_10 = 10
+private const val FIELD_11 = 11
+private const val FIELD_12 = 12
+private const val FIELD_13 = 13
+private const val FIELD_14 = 14
+private const val FIELD_15 = 15
+private const val FIELD_16 = 16
+private const val FIELD_17 = 17
+private const val FIELD_18 = 18
+private const val FIELD_19 = 19
+private const val FIELD_20 = 20
+private const val FIELD_21 = 21
+
+/** The combined picker style stored before date and time were chosen separately. */
+private enum class LegacyPickerStyle { calendar, wheels }
 
 object PortfolioJson {
     private val json =
@@ -81,6 +104,33 @@ private object SeparatorPairSerializer : KSerializer<SeparatorPair> {
 
     override fun deserialize(decoder: Decoder): SeparatorPair = SeparatorPair.valueOf(decoder.decodeString())
 }
+
+private fun <T : Enum<T>> enumSerializer(
+    serialName: String,
+    values: Array<T>,
+): KSerializer<T> =
+    object : KSerializer<T> {
+        override val descriptor = PrimitiveSerialDescriptor(serialName, PrimitiveKind.STRING)
+
+        override fun serialize(
+            encoder: Encoder,
+            value: T,
+        ) = encoder.encodeString(value.name)
+
+        override fun deserialize(decoder: Decoder): T {
+            val name = decoder.decodeString()
+            return values.firstOrNull { it.name == name } ?: throw SerializationException("Unknown $serialName $name")
+        }
+    }
+
+private val languageSerializer = enumSerializer("AppLanguage", AppLanguage.entries.toTypedArray())
+private val legacyPickerSerializer = enumSerializer("PickerStyle", LegacyPickerStyle.entries.toTypedArray())
+private val datePickerSerializer = enumSerializer("DatePickerStyle", DatePickerStyle.entries.toTypedArray())
+private val timePickerSerializer = enumSerializer("TimePickerStyle", TimePickerStyle.entries.toTypedArray())
+private val clockSerializer = enumSerializer("ClockFormat", ClockFormat.entries.toTypedArray())
+private val dateFormatSerializer = enumSerializer("DateFormat", DateFormat.entries.toTypedArray())
+private val dateOrderSerializer = enumSerializer("DateOrder", DateOrder.entries.toTypedArray())
+private val weekdaySerializer = enumSerializer("FirstWeekday", FirstWeekday.entries.toTypedArray())
 
 private object AccountRecordSerializer : KSerializer<AccountRecord> {
     override val descriptor =
@@ -299,6 +349,7 @@ private object PortfolioSerializer : KSerializer<Portfolio> {
     private val rates = MapSerializer(String.serializer(), ExactSerializer)
     private val sectionOrder = ListSerializer(String.serializer())
     private val rowOrder = MapSerializer(String.serializer(), ListSerializer(String.serializer()))
+    private val precisions = MapSerializer(String.serializer(), Int.serializer())
 
     override val descriptor =
         buildClassSerialDescriptor("Portfolio") {
@@ -312,6 +363,18 @@ private object PortfolioSerializer : KSerializer<Portfolio> {
             element("rowOrder", rowOrder.descriptor)
             element("separators", SeparatorPairSerializer.descriptor)
             element("nextId", Int.serializer().descriptor)
+            element("language", languageSerializer.descriptor)
+            element("primaryCurrency", String.serializer().descriptor)
+            element("pickerStyle", legacyPickerSerializer.descriptor)
+            element("clockFormat", clockSerializer.descriptor)
+            element("dateFormat", dateFormatSerializer.descriptor)
+            element("dateOrder", dateOrderSerializer.descriptor)
+            element("firstWeekday", weekdaySerializer.descriptor)
+            element("amountPrecisions", precisions.descriptor)
+            element("percentagePrecision", Int.serializer().descriptor)
+            element("amountScale", Int.serializer().descriptor)
+            element("datePickerStyle", datePickerSerializer.descriptor)
+            element("timePickerStyle", timePickerSerializer.descriptor)
         }
 
     override fun serialize(
@@ -329,6 +392,17 @@ private object PortfolioSerializer : KSerializer<Portfolio> {
         composite.encodeSerializableElement(descriptor, FIELD_7, rowOrder, value.rowOrder)
         composite.encodeSerializableElement(descriptor, FIELD_8, SeparatorPairSerializer, value.separators)
         composite.encodeIntElement(descriptor, FIELD_9, value.nextId)
+        composite.encodeSerializableElement(descriptor, FIELD_10, languageSerializer, value.language)
+        composite.encodeStringElement(descriptor, FIELD_11, value.primaryCurrency)
+        composite.encodeSerializableElement(descriptor, FIELD_13, clockSerializer, value.clockFormat)
+        composite.encodeSerializableElement(descriptor, FIELD_14, dateFormatSerializer, value.dateFormat)
+        composite.encodeSerializableElement(descriptor, FIELD_15, dateOrderSerializer, value.dateOrder)
+        composite.encodeSerializableElement(descriptor, FIELD_16, weekdaySerializer, value.firstWeekday)
+        composite.encodeSerializableElement(descriptor, FIELD_17, precisions, value.amountPrecisions)
+        composite.encodeIntElement(descriptor, FIELD_18, value.percentagePrecision)
+        composite.encodeIntElement(descriptor, FIELD_19, value.amountScale)
+        composite.encodeSerializableElement(descriptor, FIELD_20, datePickerSerializer, value.datePickerStyle)
+        composite.encodeSerializableElement(descriptor, FIELD_21, timePickerSerializer, value.timePickerStyle)
         composite.endStructure(descriptor)
     }
 
@@ -345,6 +419,18 @@ private object PortfolioSerializer : KSerializer<Portfolio> {
                 FIELD_7 -> fields.serial(input, descriptor, FIELD_7, "rowOrder", rowOrder)
                 FIELD_8 -> fields.serial(input, descriptor, FIELD_8, "separators", SeparatorPairSerializer)
                 FIELD_9 -> fields.int(input, descriptor, FIELD_9, "nextId")
+                FIELD_10 -> fields.serial(input, descriptor, FIELD_10, "language", languageSerializer)
+                FIELD_11 -> fields.string(input, descriptor, FIELD_11, "primaryCurrency")
+                FIELD_12 -> fields.serial(input, descriptor, FIELD_12, "pickerStyle", legacyPickerSerializer)
+                FIELD_13 -> fields.serial(input, descriptor, FIELD_13, "clockFormat", clockSerializer)
+                FIELD_14 -> fields.serial(input, descriptor, FIELD_14, "dateFormat", dateFormatSerializer)
+                FIELD_15 -> fields.serial(input, descriptor, FIELD_15, "dateOrder", dateOrderSerializer)
+                FIELD_16 -> fields.serial(input, descriptor, FIELD_16, "firstWeekday", weekdaySerializer)
+                FIELD_17 -> fields.serial(input, descriptor, FIELD_17, "amountPrecisions", precisions)
+                FIELD_18 -> fields.int(input, descriptor, FIELD_18, "percentagePrecision")
+                FIELD_19 -> fields.int(input, descriptor, FIELD_19, "amountScale")
+                FIELD_20 -> fields.serial(input, descriptor, FIELD_20, "datePickerStyle", datePickerSerializer)
+                FIELD_21 -> fields.serial(input, descriptor, FIELD_21, "timePickerStyle", timePickerSerializer)
                 else -> unexpected(index)
             }
         }) { fields ->
@@ -359,9 +445,32 @@ private object PortfolioSerializer : KSerializer<Portfolio> {
                 rowOrder = fields.require("rowOrder"),
                 separators = fields.require("separators"),
                 nextId = fields.require("nextId"),
-            )
+                language = fields.orDefault("language", AppLanguage.english),
+                primaryCurrency = fields.orDefault("primaryCurrency", "VND"),
+                datePickerStyle = fields.orDefault("datePickerStyle", legacyDatePicker(fields)),
+                timePickerStyle = fields.orDefault("timePickerStyle", legacyTimePicker(fields)),
+                clockFormat = fields.orDefault("clockFormat", ClockFormat.system),
+                dateFormat = fields.orDefault("dateFormat", DateFormat.full),
+                dateOrder = fields.orDefault("dateOrder", DateOrder.defaultOrder),
+                firstWeekday = fields.orDefault("firstWeekday", FirstWeekday.monday),
+                amountPrecisions = fields.orDefault("amountPrecisions", emptyMap()),
+                percentagePrecision = fields.orDefault("percentagePrecision", com.zenith.domain.money.PERCENTAGE_PRECISION_START),
+                amountScale = fields.orDefault("amountScale", 0),
+            ).withCurrentAmountScale()
         }
 }
+
+private fun legacyDatePicker(fields: DocumentFields): DatePickerStyle =
+    when (fields.orDefault("pickerStyle", LegacyPickerStyle.calendar)) {
+        LegacyPickerStyle.calendar -> DatePickerStyle.calendar
+        LegacyPickerStyle.wheels -> DatePickerStyle.wheels
+    }
+
+private fun legacyTimePicker(fields: DocumentFields): TimePickerStyle =
+    when (fields.orDefault("pickerStyle", LegacyPickerStyle.calendar)) {
+        LegacyPickerStyle.calendar -> TimePickerStyle.clock
+        LegacyPickerStyle.wheels -> TimePickerStyle.wheels
+    }
 
 private class DocumentFields {
     private val values = mutableMapOf<String, Any?>()
@@ -373,6 +482,16 @@ private class DocumentFields {
     ) {
         seen += name
         values[name] = value
+    }
+
+    fun <T> orDefault(
+        name: String,
+        default: T,
+    ): T {
+        if (name !in seen) {
+            return default
+        }
+        return require(name)
     }
 
     fun <T> require(name: String): T {

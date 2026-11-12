@@ -24,6 +24,7 @@ style:
     active: false
   MagicNumber:
     excludes:
+      - '**/CalendarDay.kt'
       - '**/test/**'
       - '**/androidTest/**'
       - '**/commonTest/**'

@@ -17,11 +17,11 @@ The accounts of one kind: cash, bank, e-wallet, credit card, loan, receivable, o
 _Avoid_: Assets, liabilities, a name the owner invents
 
 **Group subtotal**:
-The signed sum of that group's account balances, in the reporting currency. The Stock subtotal is cash only.
+The signed sum of that group's account balances, in the primary currency. The Stock subtotal is cash only.
 _Avoid_: net worth, a quantity, share values
 
 **Net worth**:
-Assets plus liabilities, as of now. Prices and the rate list keep no history.
+Assets plus liabilities, as of now, in the primary currency. Prices and the rate list keep no history.
 
 **Assets**:
 The positive balances of accounts in the portfolio, and the positive values of holdings. A positive balance on a credit card or a loan is an asset. A deleted account's balance is outside this sum.
@@ -35,13 +35,14 @@ _Avoid_: liability account, a group, the amount owed written as a positive numbe
 An account the owner has set aside. Its transactions stay, its balance is outside assets, liabilities, and net worth, and a deleted stock account loses its share holdings, their trades, and the cash those trades moved. Deleting it completely removes the account and those transactions, a transfer or a trade as one whole record.
 _Avoid_: hidden account
 
-**Reporting currency**:
-The currency net worth is expressed in. It is VND.
+**Primary currency**:
+The currency net worth is expressed in. The owner chooses it, starting from VND, and the choice is VND or a currency that already has a rate-list row; another choice leaves every stored amount and the rate list as they are, and net worth is the VND total converted into this currency.
+_Avoid_: reporting currency, account currency, the exchange rate on a transaction
 
 ## Balances
 
 **Account**:
-A named balance in one currency. Cash, a bank deposit, and an e-wallet are asset accounts. A credit card is a liability account. A liability balance is negative while the owner owes money. Changing kind among cash, bank, e-wallet, credit card, loan, and receivable leaves every stored amount as it is. Changing its currency rescales every amount stored on it by one factor. That factor starts from the rate list, and the owner may change the resulting balance or the rate before saving. The other account in a transfer is left as it is.
+A named balance in one currency. Cash, a bank deposit, and an e-wallet are asset accounts. A credit card is a liability account. A liability balance is negative while the owner owes money. Changing kind among cash, bank, e-wallet, credit card, loan, and receivable leaves every stored amount as it is. Changing its currency rescales every amount stored on it by one factor. That factor starts from the rate list, the suggested balance is rounded to the new currency's transaction amount decimal precision, and the owner may change the resulting balance or the rate before saving. The other account in a transfer is left as it is.
 _Avoid_: Wallet, card
 
 **Loan**:
@@ -62,8 +63,12 @@ _Avoid_: Debit card
 The owner's name for one movement: an income, an expense, a transfer, a trade, a balance adjustment, or a holding adjustment.
 _Avoid_: movement
 
+**Transaction amount decimal precision**:
+How many digits after the decimal mark an amount in one currency is typed, shown, and saved with. It is a whole number from 0 through 4, one for VND and one for each rate-list currency, starting at none for VND, JPY, and KRW and at two for every other currency. Changing it leaves saved amounts stored. What is shown rounds to the precision of the currency it is shown in, and half rounds away from zero. A total sums stored amounts and only the finished total rounds. Net worth converts through the rate list first, and a period total converts through each transaction's stored exchange rate first. Opening a transaction shows that rounding, saving stores it, and leaving without saving keeps what was stored.
+_Avoid_: percentage precision
+
 **Balance adjustment**:
-An income or an expense created when the owner types an account's balance other than the one it already shows. The amount stored is the signed difference. Positive uses the modify-balance income category. Negative uses the modify-balance expense category. It can change type the same way as any other income or expense, and that change clears the system category. Typing zero on a new account creates no transaction.
+An income or an expense created when the owner types an account's balance other than the one it already shows. Saving the rounded balance that matches the stored balance at the current precision creates none. The amount stored is the exact signed difference, including digits beyond the current precision. Positive uses the modify-balance income category. Negative uses the modify-balance expense category. It can change type the same way as any other income or expense, and that change clears the system category. Typing zero on a new account creates no transaction.
 _Avoid_: Opening balance
 
 **Exchange rate**:
@@ -71,7 +76,7 @@ The VND value of one unit of a transaction's currency, stored on that transactio
 _Avoid_: Live rate, market rate
 
 **Rate list**:
-The owner's exchange rate into VND for each currency, one row each. A new transaction starts from this list, and net worth converts foreign account balances and foreign prices through it. A currency is added to the list before an account or a price in that currency can be saved.
+The owner's exchange rate into VND for each currency, one row each. A new transaction starts from this list, and net worth converts foreign account balances and foreign prices through it into VND before the primary currency is applied. A currency is added to the list before an account or a price in that currency can be saved.
 
 **Category**:
 A label the owner creates, either for incomes or for expenses. Only these are shown, and the owner chooses from them. The owner may rename one. Its side stays as created. Deleting one clears it on existing transactions, which become uncategorized. Changing an income, an expense, or a transfer into one of the other two clears the category.
@@ -96,6 +101,18 @@ The identifier a bank assigns to one of its rows. A transaction created from tha
 
 **Occurred at**:
 The local date and time of a transaction. Income and expense totals for a period include a transaction when this time falls in the period.
+
+**Date format**:
+Which of Full, Date only, Numeric, or Numeric only writes an occurred-at. It starts on Full. Full and Numeric begin with Today, Yesterday, or the weekday. A spelled month includes the year only outside the current year, and a numeric date always includes the year.
+
+**Date order**:
+The sequence of day, month, and year in a date format. It starts on Default. Default is day/month/year in Vietnamese and month/day/year in English, System follows the phone, and Month/Day/Year, Day/Month/Year, Year/Month/Day, and Year/Day/Month stay fixed.
+
+**Clock format**:
+How a time of day is written and picked: 24-hour, 12-hour, or System. It starts on System, which follows the phone, including the phone's marker. A 12-hour time uses AM/PM. It does not decide whether a date format includes the time.
+
+**First weekday**:
+The first column of the calendar grid. It is Monday, Sunday, or Saturday, and it starts on Monday.
 
 **Note**:
 The words shown for a transaction in the list. A bank row fills the note with the bank's text. A photo fills it with the merchant, and fills the time from the bill, or with the current time when the bill has none.
@@ -133,7 +150,7 @@ The holdings of one instrument, one row per stock account. Its total is the sum 
 _Avoid_: a group, a money total, one section per stock account
 
 **Physical holdings**:
-The physical holdings, in one section. Their subtotal is the signed sum of their values in the reporting currency.
+The physical holdings, in one section. Their subtotal is the signed sum of their values in the primary currency.
 _Avoid_: a group, a quantity total
 
 **Price**:

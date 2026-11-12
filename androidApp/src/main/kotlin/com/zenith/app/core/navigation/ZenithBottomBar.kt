@@ -1,5 +1,6 @@
 package com.zenith.app.core.navigation
 
+import androidx.compose.foundation.background
 import androidx.compose.foundation.layout.Arrangement
 import androidx.compose.foundation.layout.Column
 import androidx.compose.foundation.layout.RowScope
@@ -22,9 +23,9 @@ import androidx.compose.ui.Modifier
 import androidx.compose.ui.graphics.Color
 import androidx.compose.ui.graphics.vector.ImageVector
 import androidx.compose.ui.res.stringResource
-import androidx.compose.ui.unit.dp
 import androidx.navigation3.runtime.NavKey
 import com.zenith.app.R
+import com.zenith.app.core.theme.thickness
 
 @Composable
 fun ZenithBottomBar(
@@ -33,11 +34,11 @@ fun ZenithBottomBar(
 ) {
     Column(verticalArrangement = Arrangement.SpaceAround) {
         HorizontalDivider(
-            thickness = .5.dp,
+            thickness = MaterialTheme.thickness.light,
         )
         CompositionLocalProvider(LocalRippleConfiguration provides null) {
             NavigationBar(
-                containerColor = MaterialTheme.colorScheme.surface,
+                containerColor = MaterialTheme.colorScheme.background,
             ) {
                 Tab(TransactionsDestination, current, Icons.Outlined.Receipt, R.string.transactions, onSelect)
                 Tab(StatsDestination, current, Icons.Outlined.BarChart, R.string.stats, onSelect)

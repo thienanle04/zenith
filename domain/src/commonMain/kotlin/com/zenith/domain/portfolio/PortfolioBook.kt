@@ -1,7 +1,10 @@
 package com.zenith.domain.portfolio
 
 import com.zenith.domain.money.Exact
-import com.zenith.domain.money.majorAmount
+import com.zenith.domain.money.PERCENTAGE_PRECISION_START
+import com.zenith.domain.money.PRECISION_LIMIT
+import com.zenith.domain.money.fromQuanta
+import com.zenith.domain.money.minorAmount
 
 enum class SectionKind { cash, bank, eWallet, creditCard, loan, receivable, stock, shares, physical }
 
@@ -18,6 +21,20 @@ data class PortfolioView(
     val stockAccounts: List<StockAccountChoice>,
     /** Latest transaction first. */
     val transactions: List<TransactionLine> = emptyList(),
+    val language: AppLanguage = AppLanguage.english,
+    val primaryCurrency: String = "VND",
+    val assetsExact: Exact = Exact.zero,
+    val liabilitiesExact: Exact = Exact.zero,
+    val netWorthExact: Exact = Exact.zero,
+    val datePickerStyle: DatePickerStyle = DatePickerStyle.calendar,
+    val timePickerStyle: TimePickerStyle = TimePickerStyle.clock,
+    val clockFormat: ClockFormat = ClockFormat.system,
+    val dateFormat: DateFormat = DateFormat.full,
+    val dateOrder: DateOrder = DateOrder.defaultOrder,
+    val firstWeekday: FirstWeekday = FirstWeekday.monday,
+    val amountPrecisions: Map<String, Int> = emptyMap(),
+    val percentagePrecision: Int = PERCENTAGE_PRECISION_START,
+    val rates: Map<String, Exact> = emptyMap(),
 )
 
 /** One stored balance difference or quantity difference. */
@@ -28,6 +45,8 @@ data class TransactionLine(
     val currency: String? = null,
     val quantity: Exact? = null,
     val unit: String? = null,
+    /** Unrounded major amount. The screen rounds this to the currency's precision. */
+    val amount: Exact? = null,
 )
 
 data class StockAccountChoice(
@@ -42,6 +61,8 @@ data class PortfolioSection(
     val heading: String? = null,
     /** Signed VND đồng for a group or for physical holdings. */
     val subtotalMinor: Long? = null,
+    /** The same subtotal in the primary currency, rounded for the screen. */
+    val subtotalExact: Exact? = null,
     /** Share-section total, in [subtotalUnit]. */
     val subtotalQuantity: Exact? = null,
     val subtotalUnit: String? = null,
@@ -58,6 +79,8 @@ data class PortfolioRow(
     val value: Exact?,
     val valueCurrency: String?,
     val stock: Boolean = false,
+    /** Unrounded major balance. The screen rounds this to the currency's precision. */
+    val stored: Exact? = null,
 ) {
     companion object {
         fun account(
@@ -129,21 +152,38 @@ internal data class NewHolding(
 /** The portfolio commands and the read model the page shows. */
 object PortfolioBook {
     fun present(book: Portfolio): PortfolioView {
-        val sections = sections(book)
-        val assets = sumSide(book, positive = true)
-        val liabilities = sumSide(book, positive = false)
+        val current = book.withCurrentAmountScale()
+        val sections = sections(current)
+        val assetsVnd = signedVnd(current, positive = true)
+        val liabilitiesVnd = signedVnd(current, positive = false)
+        val assets = assetsVnd.roundToIntChecked()
+        val liabilities = liabilitiesVnd.roundToIntChecked()
         return PortfolioView(
             assets = assets,
             liabilities = liabilities,
             netWorth = assets + liabilities,
             sections = sections,
-            separators = book.separators,
-            currencies = currencies(book),
+            separators = current.separators,
+            currencies = currencies(current),
             stockAccounts =
-                book.accounts
+                current.accounts
                     .filter { it.kind == AccountKind.stock && !it.setAside }
                     .map { StockAccountChoice(it.id, it.name) },
-            transactions = transactions(book),
+            transactions = transactions(current),
+            language = current.language,
+            primaryCurrency = current.primaryCurrency,
+            assetsExact = primaryAmount(current, assetsVnd),
+            liabilitiesExact = primaryAmount(current, liabilitiesVnd),
+            netWorthExact = primaryAmount(current, assetsVnd + liabilitiesVnd),
+            datePickerStyle = current.datePickerStyle,
+            timePickerStyle = current.timePickerStyle,
+            clockFormat = current.clockFormat,
+            dateFormat = current.dateFormat,
+            dateOrder = current.dateOrder,
+            firstWeekday = current.firstWeekday,
+            amountPrecisions = currencies(current).associateWith { amountPrecision(current, it) },
+            percentagePrecision = current.percentagePrecision,
+            rates = current.rates,
         )
     }
 
@@ -152,16 +192,18 @@ object PortfolioBook {
         id: String,
     ): PortfolioOutcome<AccountEditor> =
         caught {
-            val account = account(book, id)
+            val current = book.withCurrentAmountScale()
+            val account = account(current, id)
+            val major = fromQuanta(balance(current, id))
             AccountEditor(
                 id = account.id,
                 name = account.name,
                 kind = account.kind,
                 currency = account.currency,
-                balance = majorAmount(balance(book, id), account.currency),
-                currencies = currencies(book),
-                rate = rate(book, account.currency),
-                separators = book.separators,
+                balance = shownAmount(current, major, account.currency),
+                currencies = currencies(current),
+                rate = rate(current, account.currency),
+                separators = current.separators,
             )
         }
 
@@ -170,8 +212,9 @@ object PortfolioBook {
         id: String,
     ): PortfolioOutcome<HoldingEditor> =
         caught {
-            val holding = holding(book, id)
-            val instrument = instrument(book, holding.instrumentId)
+            val current = book.withCurrentAmountScale()
+            val holding = holding(current, id)
+            val instrument = instrument(current, holding.instrumentId)
             HoldingEditor(
                 holdingId = holding.id,
                 instrumentId = instrument.id,
@@ -179,8 +222,8 @@ object PortfolioBook {
                 unit = instrument.unit,
                 priceCurrency = instrument.priceCurrency,
                 price = instrument.price,
-                quantity = quantity(book, holding.id),
-                separators = book.separators,
+                quantity = quantity(current, holding.id),
+                separators = current.separators,
             )
         }
 
@@ -190,9 +233,11 @@ object PortfolioBook {
         currency: String,
     ): PortfolioOutcome<CurrencyPreview> =
         caught {
-            account(book, id)
-            val nextRate = rate(book, currency)
-            CurrencyPreview(rate = nextRate, balance = proposedBalance(book, id, nextRate))
+            val current = book.withCurrentAmountScale()
+            account(current, id)
+            val nextRate = rate(current, currency)
+            val proposed = proposedBalance(current, id, nextRate)
+            CurrencyPreview(rate = nextRate, balance = shownAmount(current, proposed, currency))
         }
 
     fun apply(
@@ -200,57 +245,78 @@ object PortfolioBook {
         command: PortfolioCommand,
     ): PortfolioOutcome<Portfolio> =
         caught {
+            val current = book.withCurrentAmountScale()
             when (command) {
-                is PortfolioCommand.AddAccount -> addAccount(book, command.name, command.kind, command.currency)
+                is PortfolioCommand.AddAccount -> addAccount(current, command.name, command.kind, command.currency)
                 is PortfolioCommand.SaveAccount ->
                     saveAccount(
-                        book,
+                        current,
                         SavedAccount(
                             id = command.id,
                             name = command.name,
                             kind = command.kind,
                             currency = command.currency,
-                            balance = parseAmount(book, command.balanceText),
-                            rate = command.rateText?.let { parseAmount(book, it) },
+                            balance = parseAmount(current, command.balanceText),
+                            rate = command.rateText?.let { parseAmount(current, it) },
                         ),
                     )
-                is PortfolioCommand.SetAside -> setAside(book, command.id)
+                is PortfolioCommand.SetAside -> setAside(current, command.id)
                 is PortfolioCommand.AddShares ->
                     addInstrument(
-                        book,
+                        current,
                         NewHolding(
                             name = command.name,
                             unit = command.unit,
                             priceCurrency = command.priceCurrency,
-                            price = parseAmount(book, command.priceText),
-                            quantity = parseAmount(book, command.quantityText),
+                            price = parseAmount(current, command.priceText),
+                            quantity = parseAmount(current, command.quantityText),
                             stockAccountId = command.stockAccountId,
                         ),
                     )
                 is PortfolioCommand.AddPhysicalHolding ->
                     addInstrument(
-                        book,
+                        current,
                         NewHolding(
                             name = command.name,
                             unit = command.unit,
                             priceCurrency = command.priceCurrency,
-                            price = parseAmount(book, command.priceText),
-                            quantity = parseAmount(book, command.quantityText),
+                            price = parseAmount(current, command.priceText),
+                            quantity = parseAmount(current, command.quantityText),
                         ),
                     )
                 is PortfolioCommand.SaveHolding ->
                     saveHolding(
-                        book,
+                        current,
                         command.holdingId,
                         command.name,
-                        parseAmount(book, command.priceText),
-                        parseAmount(book, command.quantityText),
+                        parseAmount(current, command.priceText),
+                        parseAmount(current, command.quantityText),
                     )
-                is PortfolioCommand.RemoveHolding -> removeHolding(book, command.holdingId)
-                is PortfolioCommand.RemoveInstrument -> removeInstrument(book, command.instrumentId)
-                is PortfolioCommand.MoveSection -> moveSection(book, command.key, command.delta)
-                is PortfolioCommand.MoveRow -> moveRow(book, command.sectionKey, command.rowId, command.delta)
+                is PortfolioCommand.RemoveHolding -> removeHolding(current, command.holdingId)
+                is PortfolioCommand.RemoveInstrument -> removeInstrument(current, command.instrumentId)
+                is PortfolioCommand.MoveSection -> moveSection(current, command.key, command.delta)
+                is PortfolioCommand.MoveRow -> moveRow(current, command.sectionKey, command.rowId, command.delta)
+                else -> applySetting(current, command)
             }
+        }
+
+    private fun applySetting(
+        book: Portfolio,
+        command: PortfolioCommand,
+    ): Portfolio =
+        when (command) {
+            is PortfolioCommand.SetLanguage -> book.copy(language = command.language)
+            is PortfolioCommand.SetPrimaryCurrency -> setPrimaryCurrency(book, command.currency)
+            is PortfolioCommand.SetRate -> setRate(book, command.currency, parseAmount(book, command.rateText))
+            is PortfolioCommand.SetDatePickerStyle -> book.copy(datePickerStyle = command.style)
+            is PortfolioCommand.SetTimePickerStyle -> book.copy(timePickerStyle = command.style)
+            is PortfolioCommand.SetClockFormat -> book.copy(clockFormat = command.format)
+            is PortfolioCommand.SetDateFormat -> book.copy(dateFormat = command.format)
+            is PortfolioCommand.SetDateOrder -> book.copy(dateOrder = command.order)
+            is PortfolioCommand.SetFirstWeekday -> book.copy(firstWeekday = command.weekday)
+            is PortfolioCommand.SetAmountPrecision -> setAmountPrecision(book, command.currency, command.digits)
+            is PortfolioCommand.SetPercentagePrecision -> book.copy(percentagePrecision = command.digits.coerceIn(0, PRECISION_LIMIT))
+            else -> book
         }
 
     private fun transactions(book: Portfolio): List<TransactionLine> {
@@ -261,12 +327,14 @@ object PortfolioBook {
             buildList {
                 for (movement in book.movements) {
                     val account = accounts[movement.accountId] ?: continue
+                    val major = fromQuanta(movement.amountMinor)
                     add(
                         TransactionLine(
                             id = movement.id,
                             title = account.name,
-                            minor = movement.amountMinor,
+                            minor = minorAmount(major, account.currency),
                             currency = account.currency,
+                            amount = major,
                         ),
                     )
                 }

@@ -1,10 +1,26 @@
 package com.zenith.domain.portfolio
 
+import com.zenith.domain.money.AMOUNT_SCALE
 import com.zenith.domain.money.Exact
+import com.zenith.domain.money.PERCENTAGE_PRECISION_START
 
 enum class AccountKind { cash, bank, eWallet, creditCard, loan, receivable, stock }
 
 enum class SeparatorPair { commaPoint, pointComma }
+
+enum class AppLanguage { english, vietnamese }
+
+enum class DatePickerStyle { calendar, wheels }
+
+enum class TimePickerStyle { clock, wheels }
+
+enum class ClockFormat { system, hour24, hour12 }
+
+enum class DateFormat { full, dateOnly, numeric, numericOnly }
+
+enum class DateOrder { defaultOrder, monthDayYear, dayMonthYear, yearMonthDay, yearDayMonth, system }
+
+enum class FirstWeekday { monday, sunday, saturday }
 
 /** The stored portfolio. */
 data class Portfolio(
@@ -18,6 +34,18 @@ data class Portfolio(
     val rowOrder: Map<String, List<String>> = emptyMap(),
     val separators: SeparatorPair = SeparatorPair.commaPoint,
     val nextId: Int = 1,
+    val language: AppLanguage = AppLanguage.english,
+    val primaryCurrency: String = "VND",
+    val datePickerStyle: DatePickerStyle = DatePickerStyle.calendar,
+    val timePickerStyle: TimePickerStyle = TimePickerStyle.clock,
+    val clockFormat: ClockFormat = ClockFormat.system,
+    val dateFormat: DateFormat = DateFormat.full,
+    val dateOrder: DateOrder = DateOrder.defaultOrder,
+    val firstWeekday: FirstWeekday = FirstWeekday.monday,
+    val amountPrecisions: Map<String, Int> = emptyMap(),
+    val percentagePrecision: Int = PERCENTAGE_PRECISION_START,
+    /** 0 means amounts are still in each currency's minor unit. [AMOUNT_SCALE] means quanta. */
+    val amountScale: Int = AMOUNT_SCALE,
 ) {
     companion object {
         val empty = Portfolio()

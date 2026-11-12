@@ -16,6 +16,27 @@ data object PortfolioDestination : NavKey
 data object MoreDestination : NavKey
 
 @Serializable
+data object GeneralSettingsDestination : NavKey
+
+@Serializable
+data object ThemeStyleDestination : NavKey
+
+@Serializable
+data object LocalizationFormattingDestination : NavKey
+
+@Serializable
+data object ExchangeRatesDestination : NavKey
+
+@Serializable
+data object AmountPrecisionDestination : NavKey
+
+@Serializable
+data object GuideFaqDestination : NavKey
+
+@Serializable
+data object AboutZenithDestination : NavKey
+
+@Serializable
 data object DeleteDestination : NavKey
 
 @Serializable

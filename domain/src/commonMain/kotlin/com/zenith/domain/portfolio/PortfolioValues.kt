@@ -1,7 +1,7 @@
 package com.zenith.domain.portfolio
 
 import com.zenith.domain.money.Exact
-import com.zenith.domain.money.majorAmount
+import com.zenith.domain.money.fromQuanta
 
 internal fun accountVnd(
     book: Portfolio,
@@ -11,7 +11,7 @@ internal fun accountVnd(
     return if (minor == 0L) {
         Exact.zero
     } else {
-        majorAmount(minor, account.currency) * rate(book, account.currency)
+        fromQuanta(minor) * rate(book, account.currency)
     }
 }
 
@@ -25,16 +25,18 @@ internal fun holdingVnd(
     return value * rate(book, instrument.priceCurrency)
 }
 
-internal fun vndSum(amounts: List<Exact>): Long {
+internal fun vndTotal(amounts: List<Exact>): Exact {
     var sum = Exact.zero
     for (amount in amounts) sum += amount
-    return sum.roundToIntChecked()
+    return sum
 }
 
-internal fun sumSide(
+internal fun vndSum(amounts: List<Exact>): Long = vndTotal(amounts).roundToIntChecked()
+
+internal fun signedVnd(
     book: Portfolio,
     positive: Boolean,
-): Long {
+): Exact {
     var sum = Exact.zero
     for (account in book.accounts) {
         val contribution = accountVnd(book, account)
@@ -46,5 +48,10 @@ internal fun sumSide(
         if (positive && contribution.isPositive) sum += contribution
         if (!positive && contribution.isNegative) sum += contribution
     }
-    return sum.roundToIntChecked()
+    return sum
 }
+
+internal fun sumSide(
+    book: Portfolio,
+    positive: Boolean,
+): Long = signedVnd(book, positive).roundToIntChecked()

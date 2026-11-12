@@ -9,51 +9,50 @@ import androidx.compose.foundation.layout.fillMaxWidth
 import androidx.compose.foundation.layout.padding
 import androidx.compose.foundation.lazy.LazyColumn
 import androidx.compose.foundation.lazy.itemsIndexed
-import androidx.compose.material3.HorizontalDivider
 import androidx.compose.material3.IconButton
 import androidx.compose.material3.MaterialTheme
 import androidx.compose.material3.Text
 import androidx.compose.runtime.Composable
-import androidx.compose.runtime.rememberCoroutineScope
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.graphics.Color
 import androidx.compose.ui.res.stringResource
-import androidx.compose.ui.unit.dp
 import com.zenith.app.R
+import com.zenith.app.core.components.AppDividedColumn
 import com.zenith.app.core.theme.NegativeAmount
 import com.zenith.app.core.theme.PositiveAmount
-import com.zenith.app.core.utils.formatMinor
+import com.zenith.app.core.theme.spacing
 import com.zenith.app.core.utils.formatMoney
 import com.zenith.app.core.utils.formatQuantity
-import com.zenith.app.core.writer.PortfolioViewModel
+import com.zenith.app.core.utils.formatShown
 import com.zenith.domain.money.Exact
-import com.zenith.domain.portfolio.PortfolioCommand
+import com.zenith.domain.money.abs
 import com.zenith.domain.portfolio.PortfolioRow
 import com.zenith.domain.portfolio.PortfolioSection
 import com.zenith.domain.portfolio.PortfolioView
 import com.zenith.domain.portfolio.RowKind
 import com.zenith.domain.portfolio.SectionKind
-import kotlinx.coroutines.launch
 
 @Composable
 fun PortfolioGroups(
     view: PortfolioView,
-    viewModel: PortfolioViewModel,
     modifier: Modifier = Modifier,
     reorder: Boolean = false,
     onRow: ((PortfolioRow) -> Unit)? = null,
+    onMoveSection: (String, Int) -> Unit = { _, _ -> },
+    onMoveRow: (String, String, Int) -> Unit = { _, _, _ -> },
 ) {
-    LazyColumn(modifier, verticalArrangement = Arrangement.spacedBy(8.dp)) {
+    LazyColumn(modifier, verticalArrangement = Arrangement.spacedBy(MaterialTheme.spacing.small)) {
         itemsIndexed(view.sections, key = { _, section -> section.key }) { index, section ->
             SectionBlock(
                 view = view,
                 section = section,
                 index = index,
                 count = view.sections.size,
-                viewModel = viewModel,
                 reorder = reorder,
                 onRow = onRow,
+                onMoveSection = onMoveSection,
+                onMoveRow = onMoveRow,
             )
         }
     }
@@ -65,32 +64,36 @@ private fun SectionBlock(
     section: PortfolioSection,
     index: Int,
     count: Int,
-    viewModel: PortfolioViewModel,
     reorder: Boolean,
     onRow: ((PortfolioRow) -> Unit)?,
+    onMoveSection: (String, Int) -> Unit,
+    onMoveRow: (String, String, Int) -> Unit,
 ) {
-    val scope = rememberCoroutineScope()
     Column(Modifier.fillMaxWidth()) {
-        Row(verticalAlignment = Alignment.CenterVertically, modifier = Modifier.padding(horizontal = 24.dp, vertical = 8.dp)) {
-            Text(sectionTitle(section), color = MaterialTheme.colorScheme.onSurfaceVariant, style = MaterialTheme.typography.bodyLarge, modifier = Modifier.weight(1f))
+        Row(verticalAlignment = Alignment.CenterVertically, modifier = Modifier.padding(horizontal = MaterialTheme.spacing.large, vertical = MaterialTheme.spacing.small)) {
+            Text(sectionTitle(section), color = MaterialTheme.colorScheme.onSurfaceVariant, style = MaterialTheme.typography.bodyMedium, modifier = Modifier.weight(1f))
             val quantity = section.subtotalQuantity
             if (quantity != null) {
                 Text(formatQuantity(quantity, section.subtotalUnit ?: "", view.separators))
             } else {
-                val minor = section.subtotalMinor ?: 0L
-                Text(formatMinor(kotlin.math.abs(minor), "VND", view.separators), color = amountColor(minor))
+                val subtotal = section.subtotalExact ?: Exact.zero
+                val precision = view.amountPrecisions[view.primaryCurrency] ?: 0
+                Text(
+                    formatShown(subtotal.abs(), view.primaryCurrency, view.separators, precision),
+                    color = amountColor(subtotal.sign.toLong()),
+                    style = MaterialTheme.typography.bodyMedium,
+                )
             }
             if (reorder) {
                 MoveButtons(
                     upEnabled = index > 0,
                     downEnabled = index < count - 1,
-                    onUp = { scope.launch { viewModel.commit(PortfolioCommand.MoveSection(section.key, -1)) } },
-                    onDown = { scope.launch { viewModel.commit(PortfolioCommand.MoveSection(section.key, 1)) } },
+                    onUp = { onMoveSection(section.key, -1) },
+                    onDown = { onMoveSection(section.key, 1) },
                 )
             }
         }
-        HorizontalDivider(thickness = .3.dp)
-        section.rows.forEachIndexed { rowIndex, row ->
+        AppDividedColumn(items = section.rows) { rowIndex, row ->
             SectionRow(
                 view = view,
                 section = section,
@@ -99,10 +102,9 @@ private fun SectionBlock(
                 upEnabled = rowIndex > 0,
                 downEnabled = rowIndex < section.rows.lastIndex,
                 onRow = onRow,
-                onUp = { scope.launch { viewModel.commit(PortfolioCommand.MoveRow(section.key, row.id, -1)) } },
-                onDown = { scope.launch { viewModel.commit(PortfolioCommand.MoveRow(section.key, row.id, 1)) } },
+                onUp = { onMoveRow(section.key, row.id, -1) },
+                onDown = { onMoveRow(section.key, row.id, 1) },
             )
-            HorizontalDivider(thickness = .3.dp)
         }
     }
 }
@@ -124,7 +126,7 @@ private fun SectionRow(
     val sign =
         when {
             shares -> 0
-            row.kind == RowKind.account -> (row.minor ?: 0L).sign()
+            row.kind == RowKind.account -> (row.stored ?: Exact.zero).sign
             else -> (row.value ?: Exact.zero).sign
         }
     Row(
@@ -132,7 +134,7 @@ private fun SectionRow(
             .fillMaxWidth()
             .then(if (onRow == null) Modifier else Modifier.clickable { onRow(row) })
             .background(MaterialTheme.colorScheme.surfaceContainer)
-            .padding(vertical = 8.dp, horizontal = 24.dp),
+            .padding(vertical = MaterialTheme.spacing.medium, horizontal = MaterialTheme.spacing.large),
         verticalAlignment = Alignment.CenterVertically,
     ) {
         Column(Modifier.weight(1f)) {
@@ -184,7 +186,10 @@ private fun rowAmount(
 ): String =
     when {
         shares -> formatQuantity(row.quantity ?: Exact.zero, row.unit ?: "", view.separators)
-        row.kind == RowKind.account -> formatMinor(row.minor ?: 0L, row.currency ?: "VND", view.separators)
+        row.kind == RowKind.account -> {
+            val currency = row.currency ?: "VND"
+            formatShown((row.stored ?: Exact.zero).abs(), currency, view.separators, view.amountPrecisions[currency] ?: 0)
+        }
         else -> formatMoney(row.value ?: Exact.zero, row.valueCurrency ?: "VND", view.separators)
     }
 

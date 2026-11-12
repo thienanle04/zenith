@@ -6,6 +6,7 @@ import androidx.compose.foundation.layout.padding
 import androidx.compose.material3.Button
 import androidx.compose.material3.CircularProgressIndicator
 import androidx.compose.material3.ExperimentalMaterial3Api
+import androidx.compose.material3.MaterialTheme
 import androidx.compose.material3.Switch
 import androidx.compose.material3.Text
 import androidx.compose.runtime.Composable
@@ -19,7 +20,7 @@ import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.res.stringResource
 import androidx.compose.ui.text.input.KeyboardType
-import androidx.compose.ui.unit.dp
+import androidx.compose.ui.tooling.preview.Preview
 import androidx.lifecycle.compose.collectAsStateWithLifecycle
 import com.zenith.app.R
 import com.zenith.app.core.components.AppChoiceRow
@@ -27,6 +28,9 @@ import com.zenith.app.core.components.AppTextRow
 import com.zenith.app.core.components.ConfirmDialog
 import com.zenith.app.core.editor.EditorScaffold
 import com.zenith.app.core.l10n.portfolioFailureMessage
+import com.zenith.app.core.preview.SamplePortfolio
+import com.zenith.app.core.theme.ZenithTheme
+import com.zenith.app.core.theme.spacing
 import com.zenith.app.core.utils.formatMajor
 import com.zenith.app.core.utils.moneyPrefix
 import com.zenith.app.core.utils.moneySuffix
@@ -35,6 +39,7 @@ import com.zenith.domain.portfolio.HoldingEditor
 import com.zenith.domain.portfolio.PortfolioCommand
 import com.zenith.domain.portfolio.PortfolioFailure
 import com.zenith.domain.portfolio.PortfolioOutcome
+import com.zenith.domain.portfolio.PortfolioView
 import com.zenith.domain.portfolio.SeparatorPair
 import com.zenith.domain.portfolio.StockAccountChoice
 import kotlinx.coroutines.launch
@@ -61,16 +66,64 @@ fun AddHoldingScreen(
         if (stockAccountId == null) stockAccountId = accounts.firstOrNull()?.id
         if (accounts.isEmpty()) shares = false
     }
-    EditorScaffold(stringResource(R.string.add_holding), error, onDone, onSave = {
-        scope.launch {
-            val command = addHoldingCommand(shares, stockAccountId, name, unit, currency, price, quantity) ?: return@launch
-            error = viewModel.commit(command)
-            if (error == null) onDone()
-        }
-    }) {
-        AppTextRow(stringResource(R.string.name), name) { name = it }
-        AppTextRow(stringResource(R.string.unit), unit) { unit = it }
-        val separators = view?.separators ?: SeparatorPair.commaPoint
+    AddHoldingScreen(
+        view = view,
+        name = name,
+        unit = unit,
+        price = price,
+        quantity = quantity,
+        currency = currency,
+        shares = shares,
+        stockAccountId = stockAccountId,
+        error = error,
+        onName = { name = it },
+        onUnit = { unit = it },
+        onPrice = { price = it },
+        onQuantity = { quantity = it },
+        onCurrency = { currency = it },
+        onShares = { on ->
+            shares = on && accounts.isNotEmpty()
+            if (shares && stockAccountId == null) stockAccountId = accounts.first().id
+        },
+        onAccount = { stockAccountId = it },
+        onDone = onDone,
+        onSave = {
+            scope.launch {
+                val command = addHoldingCommand(shares, stockAccountId, name, unit, currency, price, quantity) ?: return@launch
+                error = viewModel.commit(command)
+                if (error == null) onDone()
+            }
+        },
+    )
+}
+
+@OptIn(ExperimentalMaterial3Api::class)
+@Composable
+private fun AddHoldingScreen(
+    view: PortfolioView?,
+    name: String,
+    unit: String,
+    price: String,
+    quantity: String,
+    currency: String,
+    shares: Boolean,
+    stockAccountId: String?,
+    error: PortfolioFailure?,
+    onName: (String) -> Unit,
+    onUnit: (String) -> Unit,
+    onPrice: (String) -> Unit,
+    onQuantity: (String) -> Unit,
+    onCurrency: (String) -> Unit,
+    onShares: (Boolean) -> Unit,
+    onAccount: (String) -> Unit,
+    onDone: () -> Unit,
+    onSave: () -> Unit,
+) {
+    val accounts = view?.stockAccounts.orEmpty()
+    val separators = view?.separators ?: SeparatorPair.commaPoint
+    EditorScaffold(stringResource(R.string.add_holding), error, onDone, onSave = onSave) {
+        AppTextRow(stringResource(R.string.name), name, onValue = onName)
+        AppTextRow(stringResource(R.string.unit), unit, onValue = onUnit)
         AppTextRow(
             stringResource(R.string.price),
             price,
@@ -78,24 +131,23 @@ fun AddHoldingScreen(
             separators = separators,
             prefix = moneyPrefix(currency),
             suffix = moneySuffix(currency),
-        ) { price = it }
+            onValue = onPrice,
+        )
         AppTextRow(
             stringResource(R.string.quantity),
             quantity,
             KeyboardType.Decimal,
             separators = separators,
             suffix = if (unit.isBlank()) "" else " ${unit.trim()}",
-        ) { quantity = it }
-        AppChoiceRow(stringResource(R.string.currency), currency, view?.currencies ?: listOf("VND"), { it }) { currency = it }
+            onValue = onQuantity,
+        )
+        AppChoiceRow(stringResource(R.string.currency), currency, view?.currencies ?: listOf("VND"), { it }, onSelect = onCurrency)
         ShareFields(
             shares = shares,
             accounts = accounts,
             stockAccountId = stockAccountId,
-            onShares = { on ->
-                shares = on && accounts.isNotEmpty()
-                if (shares && stockAccountId == null) stockAccountId = accounts.first().id
-            },
-            onAccount = { stockAccountId = it },
+            onShares = onShares,
+            onAccount = onAccount,
         )
     }
 }
@@ -171,69 +223,168 @@ fun HoldingScreen(
     val failure = error
     if (loaded == null) {
         if (failure == null) {
-            CircularProgressIndicator(Modifier.padding(24.dp))
+            CircularProgressIndicator(Modifier.padding(MaterialTheme.spacing.large))
         } else {
-            Text(stringResource(portfolioFailureMessage(failure)), modifier = Modifier.padding(24.dp))
+            Text(stringResource(portfolioFailureMessage(failure)), modifier = Modifier.padding(MaterialTheme.spacing.large))
         }
         return
     }
-    EditorScaffold(loaded.name, error, onDone, onSave = {
-        scope.launch {
-            error = viewModel.commit(PortfolioCommand.SaveHolding(loaded.holdingId, name, price, quantity))
-            if (error == null) onDone()
-        }
-    }) {
-        AppTextRow(stringResource(R.string.name), name) { name = it }
-        Text(stringResource(R.string.unit) + ": " + loaded.unit)
-        Text(stringResource(R.string.currency) + ": " + loaded.priceCurrency)
+    HoldingScreen(
+        editor = loaded,
+        failure = error,
+        name = name,
+        price = price,
+        quantity = quantity,
+        confirmingHolding = confirmingHolding,
+        confirmingInstrument = confirmingInstrument,
+        onName = { name = it },
+        onPrice = { price = it },
+        onQuantity = { quantity = it },
+        onConfirmHolding = { confirmingHolding = it },
+        onConfirmInstrument = { confirmingInstrument = it },
+        onDone = onDone,
+        onSave = {
+            scope.launch {
+                error = viewModel.commit(PortfolioCommand.SaveHolding(loaded.holdingId, name, price, quantity))
+                if (error == null) onDone()
+            }
+        },
+        onRemoveHolding = {
+            scope.launch {
+                val code = viewModel.commit(PortfolioCommand.RemoveHolding(id))
+                if (code == null) onDone() else error = code
+            }
+        },
+        onRemoveInstrument = {
+            scope.launch {
+                val code = viewModel.commit(PortfolioCommand.RemoveInstrument(loaded.instrumentId))
+                if (code == null) onDone() else error = code
+            }
+        },
+    )
+}
+
+@OptIn(ExperimentalMaterial3Api::class)
+@Composable
+private fun HoldingScreen(
+    editor: HoldingEditor,
+    failure: PortfolioFailure?,
+    name: String,
+    price: String,
+    quantity: String,
+    confirmingHolding: Boolean,
+    confirmingInstrument: Boolean,
+    onName: (String) -> Unit,
+    onPrice: (String) -> Unit,
+    onQuantity: (String) -> Unit,
+    onConfirmHolding: (Boolean) -> Unit,
+    onConfirmInstrument: (Boolean) -> Unit,
+    onDone: () -> Unit,
+    onSave: () -> Unit,
+    onRemoveHolding: () -> Unit,
+    onRemoveInstrument: () -> Unit,
+) {
+    EditorScaffold(editor.name, failure, onDone, onSave = onSave) {
+        AppTextRow(stringResource(R.string.name), name, onValue = onName)
+        Text(stringResource(R.string.unit) + ": " + editor.unit)
+        Text(stringResource(R.string.currency) + ": " + editor.priceCurrency)
         AppTextRow(
             stringResource(R.string.price),
             price,
             KeyboardType.Decimal,
-            separators = loaded.separators,
-            prefix = moneyPrefix(loaded.priceCurrency),
-            suffix = moneySuffix(loaded.priceCurrency),
-        ) { price = it }
+            separators = editor.separators,
+            prefix = moneyPrefix(editor.priceCurrency),
+            suffix = moneySuffix(editor.priceCurrency),
+            onValue = onPrice,
+        )
         AppTextRow(
             stringResource(R.string.quantity),
             quantity,
             KeyboardType.Decimal,
-            separators = loaded.separators,
-            suffix = " ${loaded.unit}",
-        ) { quantity = it }
-        Button(onClick = { confirmingHolding = true }, modifier = Modifier.fillMaxWidth()) {
+            separators = editor.separators,
+            suffix = " ${editor.unit}",
+            onValue = onQuantity,
+        )
+        Button(onClick = { onConfirmHolding(true) }, modifier = Modifier.fillMaxWidth()) {
             Text(stringResource(R.string.remove_holding))
         }
-        Button(onClick = { confirmingInstrument = true }, modifier = Modifier.fillMaxWidth()) {
+        Button(onClick = { onConfirmInstrument(true) }, modifier = Modifier.fillMaxWidth()) {
             Text(stringResource(R.string.remove_instrument))
         }
         if (confirmingHolding) {
             ConfirmDialog(
-                message = stringResource(R.string.remove_holding_confirm, name.ifBlank { loaded.name }),
+                message = stringResource(R.string.remove_holding_confirm, name.ifBlank { editor.name }),
                 confirm = stringResource(R.string.remove_holding),
                 onConfirm = {
-                    confirmingHolding = false
-                    scope.launch {
-                        val code = viewModel.commit(PortfolioCommand.RemoveHolding(id))
-                        if (code == null) onDone() else error = code
-                    }
+                    onConfirmHolding(false)
+                    onRemoveHolding()
                 },
-                onDismiss = { confirmingHolding = false },
+                onDismiss = { onConfirmHolding(false) },
             )
         }
         if (confirmingInstrument) {
             ConfirmDialog(
-                message = stringResource(R.string.remove_instrument_confirm, name.ifBlank { loaded.name }),
+                message = stringResource(R.string.remove_instrument_confirm, name.ifBlank { editor.name }),
                 confirm = stringResource(R.string.remove_instrument),
                 onConfirm = {
-                    confirmingInstrument = false
-                    scope.launch {
-                        val code = viewModel.commit(PortfolioCommand.RemoveInstrument(loaded.instrumentId))
-                        if (code == null) onDone() else error = code
-                    }
+                    onConfirmInstrument(false)
+                    onRemoveInstrument()
                 },
-                onDismiss = { confirmingInstrument = false },
+                onDismiss = { onConfirmInstrument(false) },
             )
         }
+    }
+}
+
+@Preview(showBackground = true, showSystemUi = true)
+@Composable
+private fun AddHoldingScreenPreview() {
+    ZenithTheme {
+        AddHoldingScreen(
+            view = SamplePortfolio.view,
+            name = "",
+            unit = "",
+            price = "",
+            quantity = "0",
+            currency = "VND",
+            shares = false,
+            stockAccountId = null,
+            error = null,
+            onName = {},
+            onUnit = {},
+            onPrice = {},
+            onQuantity = {},
+            onCurrency = {},
+            onShares = {},
+            onAccount = {},
+            onDone = {},
+            onSave = {},
+        )
+    }
+}
+
+@Preview(showBackground = true, showSystemUi = true)
+@Composable
+private fun HoldingScreenPreview() {
+    val editor = SamplePortfolio.holding
+    ZenithTheme {
+        HoldingScreen(
+            editor = editor,
+            failure = null,
+            name = editor.name,
+            price = formatMajor(editor.price, editor.separators),
+            quantity = formatMajor(editor.quantity, editor.separators),
+            confirmingHolding = false,
+            confirmingInstrument = false,
+            onName = {},
+            onPrice = {},
+            onQuantity = {},
+            onConfirmHolding = {},
+            onConfirmInstrument = {},
+            onDone = {},
+            onSave = {},
+            onRemoveHolding = {},
+            onRemoveInstrument = {},
+        )
     }
 }
