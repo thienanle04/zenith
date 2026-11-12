@@ -1,6 +1,7 @@
 package com.zenith.domain.portfolio
 
 import com.zenith.domain.money.Exact
+import com.zenith.domain.money.fromQuanta
 import kotlin.test.Test
 import kotlin.test.assertEquals
 import kotlin.test.assertTrue
@@ -359,7 +360,7 @@ class PortfolioBookTest {
         assertEquals(saved, shown.movements.single().amountMinor)
 
         val replaced = book.apply(PortfolioCommand.SaveAccount("1", "Dollar", AccountKind.bank, "USD", "11", null))
-        assertEquals(Exact.parse("0.75"), com.zenith.domain.money.fromQuanta(replaced.movements.last().amountMinor))
+        assertEquals(Exact.parse("0.75"), fromQuanta(replaced.movements.last().amountMinor))
         assertEquals(Exact.parse("11"), readyEditor(replaced).balance)
     }
 
